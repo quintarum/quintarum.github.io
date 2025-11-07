@@ -1,0 +1,15 @@
+{
+  "app": {
+    "title": "TDS Web Simulation",
+    "description": "Interactive visualization of Theory of Dynamic Symmetry"
+  },
+  "controls": {
+    "start": "Start",
+    "stop": "Stop",
+    "pause": "Pause",
+    "reset": "Reset"
+  },
+  "tutorial": {
+    "welcome": "Welcome to TDS Web Simulation"
+  }
+}
