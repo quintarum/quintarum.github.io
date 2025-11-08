@@ -1,0 +1,248 @@
+/**
+ * Guided Tour Styles
+ * Thematic tour system for TDS concepts
+ */
+
+.guided-tour-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 10000;
+  pointer-events: all;
+}
+
+.guided-tour-highlight {
+  position: absolute;
+  border: 3px solid #4CAF50;
+  border-radius: 8px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  transition: all 0.3s ease;
+  z-index: 10001;
+}
+
+.guided-tour-highlight.pulse {
+  animation: tour-pulse 2s infinite;
+}
+
+@keyframes tour-pulse {
+  0%, 100% {
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5), 0 0 20px rgba(76, 175, 80, 0.5);
+  }
+  50% {
+    border-color: #66BB6A;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5), 0 0 30px rgba(76, 175, 80, 0.8);
+  }
+}
+
+.guided-tour-tooltip {
+  position: absolute;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  max-width: 450px;
+  min-width: 350px;
+  z-index: 10002;
+  pointer-events: all;
+  animation: tour-fade-in 0.3s ease;
+}
+
+@keyframes tour-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.guided-tour-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.guided-tour-progress {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.guided-tour-progress-bar {
+  height: 4px;
+  background: #4CAF50;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.guided-tour-progress-text {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.guided-tour-exit {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.guided-tour-exit:hover {
+  background: #f5f5f5;
+  color: #333;
+}
+
+.guided-tour-content {
+  padding: 20px;
+}
+
+.guided-tour-title {
+  margin: 0 0 12px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+}
+
+.guided-tour-description {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #555;
+}
+
+.guided-tour-navigation {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-top: 1px solid #e0e0e0;
+  gap: 12px;
+}
+
+.guided-tour-btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.guided-tour-prev {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.guided-tour-prev:hover:not(:disabled) {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.guided-tour-prev:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.guided-tour-next {
+  background: #4CAF50;
+  color: white;
+}
+
+.guided-tour-next:hover {
+  background: #45a049;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .guided-tour-tooltip {
+    background: #2d2d2d;
+    color: #e0e0e0;
+  }
+
+  .guided-tour-header {
+    border-bottom-color: #444;
+  }
+
+  .guided-tour-title {
+    color: #e0e0e0;
+  }
+
+  .guided-tour-description {
+    color: #b0b0b0;
+  }
+
+  .guided-tour-navigation {
+    border-top-color: #444;
+  }
+
+  .guided-tour-prev {
+    background: #3d3d3d;
+    color: #b0b0b0;
+  }
+
+  .guided-tour-prev:hover:not(:disabled) {
+    background: #4d4d4d;
+    color: #e0e0e0;
+  }
+
+  .guided-tour-exit:hover {
+    background: #3d3d3d;
+    color: #e0e0e0;
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .guided-tour-tooltip {
+    max-width: 90vw;
+    min-width: 280px;
+  }
+
+  .guided-tour-title {
+    font-size: 18px;
+  }
+
+  .guided-tour-description {
+    font-size: 14px;
+  }
+
+  .guided-tour-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+}
+
+/* Highlight pulse effect for elements */
+.highlight-pulse {
+  animation: element-pulse 1s ease-in-out 3;
+}
+
+@keyframes element-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+  }
+}

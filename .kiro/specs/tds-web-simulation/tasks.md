@@ -174,11 +174,11 @@
   - Add completion tracking
   - _Requirements: 5.1, 5.7_
 
-- [x]* 7.2 Build tutorial content
+- [x] 7.2 Build tutorial content
   - Tutorial steps already defined in Tutorial.ts with welcome, canvas, controls, playback, render mode, anomaly creation, analytics, info panel, and completion steps
   - _Requirements: 5.1, 5.7_
 
-- [ ]* 7.3 Implement GuidedTour system
+- [x] 7.3 Implement GuidedTour system
   - Create thematic tour framework
   - Implement "Symmetry Basics" tour
   - Add "Anomaly Dynamics" tour
