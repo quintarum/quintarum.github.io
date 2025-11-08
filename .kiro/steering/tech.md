@@ -20,6 +20,7 @@
 - **Prettier 3.6**: Code formatting
 - **eslint-config-prettier**: ESLint/Prettier integration
 - **vite-plugin-pwa**: Progressive Web App support
+- **tsx 4.x**: TypeScript execution for scripts and tools
 
 ## Common Commands
 
@@ -47,6 +48,21 @@ npm run type-check       # Run TypeScript type checking
 - Use explicit types for function parameters and return values
 - Prefer interfaces over type aliases for object shapes
 - Use enums for fixed sets of values (node states, simulation modes)
+
+### TypeScript-Only Policy
+
+**IMPORTANT**: All code in this project MUST be written in TypeScript, including:
+- ✅ Source code (src/)
+- ✅ Scripts (scripts/)
+- ✅ Configuration files where possible
+- ✅ Build tools and utilities
+- ❌ NO JavaScript (.js) files should be created
+
+**Script Execution**:
+- Use `tsx` for running TypeScript scripts directly
+- Scripts should use ES modules (import/export)
+- Include proper type annotations and interfaces
+- Example: `tsx scripts/generate-icons.ts`
 
 ### Migration Status
 

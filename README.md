@@ -49,6 +49,9 @@ npm run preview
 ### Code Quality
 
 ```bash
+# Type check
+npm run type-check
+
 # Lint code
 npm run lint
 
@@ -62,31 +65,55 @@ npm run format
 npm run format:check
 ```
 
+### Scripts and Tools
+
+```bash
+# Generate PWA icons
+npm run icons:generate
+
+# Verify generated icons
+npm run icons:verify
+```
+
+## TypeScript-Only Policy
+
+This project follows a **strict TypeScript-only policy**:
+
+- ✅ All source code must be TypeScript (`.ts`, `.tsx`)
+- ✅ All scripts must be TypeScript (executed with `tsx`)
+- ✅ Explicit type annotations required
+- ❌ No JavaScript (`.js`, `.jsx`) files allowed
+
+See `.kiro/steering/typescript-policy.md` for detailed guidelines.
+
 ## Project Structure
 
 ```
 tds-simulation/
 ├── src/
-│   ├── main.js              # Application entry point
-│   ├── core/                # Core simulation logic
-│   ├── rendering/           # 2D and 3D rendering
-│   ├── analytics/           # Metrics and data analysis
-│   ├── ui/                  # User interface components
-│   ├── education/           # Educational features
-│   ├── i18n/                # Internationalization
-│   └── utils/               # Utility functions
+│   ├── main.ts              # Application entry point (TypeScript)
+│   ├── core/                # Core simulation logic (TypeScript)
+│   ├── rendering/           # 2D and 3D rendering (TypeScript)
+│   ├── analytics/           # Metrics and data analysis (TypeScript)
+│   ├── ui/                  # User interface components (TypeScript)
+│   ├── education/           # Educational features (TypeScript)
+│   ├── i18n/                # Internationalization (JSON)
+│   └── utils/               # Utility functions (TypeScript)
+├── scripts/                 # Build and utility scripts (TypeScript)
 ├── styles/                  # CSS stylesheets
-├── assets/                  # Static assets
+├── public/                  # Static assets and PWA icons
 └── index.html               # Main HTML file
 ```
 
 ## Technologies
 
+- **TypeScript** - Primary language (TypeScript-only codebase)
 - **Vite** - Build tool and dev server
 - **Three.js** - 3D visualization
 - **Chart.js** - Real-time charts and analytics
 - **i18next** - Internationalization
 - **PapaParse** - CSV data export
+- **tsx** - TypeScript execution for scripts
 
 ## License
 

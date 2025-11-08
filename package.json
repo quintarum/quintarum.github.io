@@ -4,6 +4,9 @@
   "description": "Interactive web simulation of Theory of Dynamic Symmetry",
   "type": "module",
   "scripts": {
+    "postinstall": "npm run icons:generate",
+    "icons:generate": "tsx scripts/generate-icons.ts",
+    "icons:verify": "tsx scripts/generate-icons.ts --verify",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
@@ -33,7 +36,10 @@
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
     "patch-package": "^8.0.1",
+    "png-to-ico": "^2.1.8",
     "prettier": "^3.6.2",
+    "sharp": "^0.34.5",
+    "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vite": "^7.2.2",
     "vite-plugin-pwa": "^1.1.0"

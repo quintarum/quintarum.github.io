@@ -437,7 +437,7 @@
   - Meta tags for SEO and PWA already present
   - _Requirements: 1.1, 6.1_
 
-- [ ] 20.2 Create app icons for PWA
+- [x] 20.2 Create app icons for PWA
   - Generate icon-192.png and icon-512.png
   - Create favicon.ico
   - Create apple-touch-icon.png

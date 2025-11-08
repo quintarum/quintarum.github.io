@@ -1,0 +1,10 @@
+# robots.txt for TDS Web Simulation
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://quintarum.github.io/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 1
