@@ -1,5 +1,9 @@
 #!/usr/bin/env tsx
 
+/* eslint-disable no-console */
+/* eslint-disable no-undef */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 /**
  * Icon Generation Script
  * Generates PWA icons from SVG source
