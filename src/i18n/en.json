@@ -57,5 +57,47 @@
     "theoryDesc": "proposes that fundamental physical phenomena emerge from reversible symmetry dynamics in a discrete lattice structure. The theory suggests that dark matter, matter-antimatter asymmetry, and quantum measurement can be explained through symmetry transitions and anomaly propagation without introducing new particles.",
     "readPaper": "Read the full paper",
     "readTheory": "Read the theory paper"
+  },
+  "quiz": {
+    "title": "Quiz",
+    "startQuiz": "Start Quiz",
+    "closeQuiz": "Close Quiz",
+    "submitAnswer": "Submit Answer",
+    "nextQuestion": "Next Question",
+    "previousQuestion": "Previous",
+    "finishQuiz": "Finish Quiz",
+    "reviewAnswers": "Review Answers",
+    "retakeQuiz": "Retake Quiz",
+    "generateCertificate": "Generate Certificate",
+    "selectAnswer": "Please select an answer",
+    "correct": "Correct!",
+    "incorrect": "Incorrect.",
+    "congratulations": "Congratulations! You passed!",
+    "tryAgain": "Keep learning and try again!",
+    "score": "Score",
+    "correctAnswers": "Correct Answers",
+    "timeSpent": "Time Spent",
+    "passingScore": "Passing Score",
+    "questionsAnswered": "questions answered",
+    "of": "of",
+    "difficulty": {
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced"
+    },
+    "category": {
+      "symmetry": "Symmetry",
+      "anomalies": "Anomalies",
+      "reversibility": "Reversibility",
+      "energy": "Energy",
+      "physics": "Physics"
+    },
+    "progress": {
+      "totalQuizzes": "Total Quizzes",
+      "completedQuizzes": "Completed",
+      "totalAttempts": "Total Attempts",
+      "averageScore": "Average Score",
+      "certificatesEarned": "Certificates Earned"
+    }
   }
 }

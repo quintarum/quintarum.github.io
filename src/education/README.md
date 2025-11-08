@@ -139,12 +139,27 @@ To add custom tutorials, extend the `loadTutorialLibrary()` method in Multimedia
 }
 ```
 
+## Internationalization
+
+All educational components support multiple languages:
+- **English** (`src/i18n/en.json`)
+- **Russian** (`src/i18n/ru.json`)
+- **Ukrainian** (`src/i18n/uk.json`)
+
+Quiz system includes full translations for:
+- Quiz interface elements
+- Button labels and navigation
+- Feedback messages
+- Difficulty and category labels
+- Progress tracking text
+
 ## Styling
 
 All educational components use consistent styling defined in:
 - `styles/main.css` - Main styles including mode toggle and annotations
 - `styles/tutorial.css` - Tutorial-specific styles
 - `styles/guided-tour.css` - Guided tour styles
+- `styles/quiz.css` - Quiz system styles
 
 ## Accessibility
 
@@ -155,11 +170,70 @@ All educational features include:
 - Responsive design for mobile devices
 - Clear visual indicators
 
+### 3. Quiz System (Quiz.ts)
+Interactive quiz system for testing comprehension of TDS concepts:
+- **Multiple Choice Questions**: Questions with 4 options each
+- **Answer Validation**: Immediate feedback with explanations
+- **Progress Tracking**: Tracks attempts, scores, and completion
+- **Certificate Generation**: Printable certificates for passing quizzes
+- **Multiple Difficulty Levels**: Beginner, intermediate, and advanced quizzes
+
+#### Features:
+- Question database covering all TDS concepts
+- Real-time progress indicators
+- Answer review after completion
+- Score tracking and best score history
+- Certificate generation for passing scores
+- LocalStorage persistence for progress
+
+#### Available Quizzes:
+1. **Symmetry Basics** (Beginner, 70% passing)
+   - Fundamental symmetry concepts
+   - Node states and interactions
+   - Symmetry metrics
+
+2. **Anomaly Dynamics** (Intermediate, 75% passing)
+   - Anomaly formation and propagation
+   - Energy distribution effects
+   - Visual effects and indicators
+
+3. **Time Reversibility & Energy Conservation** (Advanced, 80% passing)
+   - Reversible dynamics principles
+   - Energy conservation laws
+   - Information preservation
+
+4. **Physics Problems** (Advanced, 75% passing)
+   - Unsolved physics problems
+   - TDS approaches to major challenges
+   - Comparison with Standard Model
+
+#### Usage:
+```typescript
+import { QuizSystem } from './education/Quiz.js';
+
+const quizSystem = new QuizSystem();
+
+// Start a specific quiz
+quizSystem.startQuiz('symmetry-basics');
+
+// Get available quizzes
+const allQuizzes = quizSystem.getAvailableQuizzes();
+
+// Get quizzes by difficulty
+const beginnerQuizzes = quizSystem.getQuizzesByDifficulty('beginner');
+
+// Check progress
+const progress = quizSystem.getProgress('symmetry-basics');
+
+// Get overall statistics
+const stats = quizSystem.getOverallStatistics();
+```
+
 ## Future Enhancements
 
 Potential additions (marked as optional in tasks):
-- Quiz system for knowledge testing
 - Lesson planner for educators
 - Presentation mode for teaching
-- Certificate generation
 - Collaborative learning features
+- Adaptive difficulty based on performance
+- Timed quiz mode

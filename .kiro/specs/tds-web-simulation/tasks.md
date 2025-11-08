@@ -207,7 +207,7 @@
   - Create floating annotation UI elements
   - _Requirements: 5.7_
 
-- [ ]* 8.5 Build Quiz system
+- [x] 8.5 Build Quiz system
   - Create quiz question database
   - Implement quiz UI with multiple choice
   - Add answer validation and feedback
