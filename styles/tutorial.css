@@ -1,0 +1,302 @@
+/* Tutorial Overlay Styles */
+
+.tutorial-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 10000;
+  pointer-events: auto;
+}
+
+/* Highlight Box */
+.tutorial-highlight {
+  position: fixed;
+  border: 3px solid #4CAF50;
+  border-radius: 8px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7),
+              0 0 20px rgba(76, 175, 80, 0.6);
+  pointer-events: none;
+  z-index: 10001;
+  transition: all 0.3s ease;
+}
+
+.tutorial-highlight.pulse {
+  animation: tutorial-pulse 2s infinite;
+}
+
+@keyframes tutorial-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7),
+                0 0 20px rgba(76, 175, 80, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7),
+                0 0 30px rgba(76, 175, 80, 0.9),
+                0 0 40px rgba(76, 175, 80, 0.6);
+  }
+}
+
+/* Tooltip Container */
+.tutorial-tooltip {
+  position: fixed;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  padding: 24px;
+  max-width: 400px;
+  min-width: 320px;
+  z-index: 10002;
+  animation: tutorial-fade-in 0.3s ease;
+}
+
+@keyframes tutorial-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Progress Bar */
+.tutorial-progress {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tutorial-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.tutorial-progress-bar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: var(--progress, 0%);
+  background: linear-gradient(90deg, #4CAF50, #66BB6A);
+  transition: width 0.3s ease;
+}
+
+.tutorial-progress-text {
+  font-size: 12px;
+  color: #666;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+/* Content */
+.tutorial-content {
+  margin-bottom: 24px;
+}
+
+.tutorial-title {
+  margin: 0 0 12px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+}
+
+.tutorial-description {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #555;
+}
+
+/* Navigation */
+.tutorial-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.tutorial-nav-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.tutorial-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.tutorial-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tutorial-btn:active {
+  transform: translateY(0);
+}
+
+.tutorial-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.tutorial-skip {
+  background: transparent;
+  color: #666;
+  padding: 10px 16px;
+}
+
+.tutorial-skip:hover {
+  background: #f5f5f5;
+  color: #333;
+}
+
+.tutorial-prev {
+  background: #f5f5f5;
+  color: #333;
+}
+
+.tutorial-prev:hover {
+  background: #e0e0e0;
+}
+
+.tutorial-next {
+  background: #4CAF50;
+  color: white;
+}
+
+.tutorial-next:hover {
+  background: #45a049;
+}
+
+/* Dark Theme Support */
+@media (prefers-color-scheme: dark) {
+  .tutorial-tooltip {
+    background: #2d2d2d;
+    color: #e0e0e0;
+  }
+
+  .tutorial-title {
+    color: #ffffff;
+  }
+
+  .tutorial-description {
+    color: #b0b0b0;
+  }
+
+  .tutorial-progress-bar {
+    background: #444;
+  }
+
+  .tutorial-progress-text {
+    color: #999;
+  }
+
+  .tutorial-skip {
+    color: #999;
+  }
+
+  .tutorial-skip:hover {
+    background: #3d3d3d;
+    color: #e0e0e0;
+  }
+
+  .tutorial-prev {
+    background: #3d3d3d;
+    color: #e0e0e0;
+  }
+
+  .tutorial-prev:hover {
+    background: #4d4d4d;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tutorial-tooltip {
+    max-width: calc(100vw - 40px);
+    min-width: 280px;
+    padding: 20px;
+  }
+
+  .tutorial-title {
+    font-size: 18px;
+  }
+
+  .tutorial-description {
+    font-size: 13px;
+  }
+
+  .tutorial-navigation {
+    flex-direction: column;
+  }
+
+  .tutorial-nav-buttons {
+    width: 100%;
+  }
+
+  .tutorial-btn {
+    flex: 1;
+  }
+
+  .tutorial-skip {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .tutorial-tooltip {
+    padding: 16px;
+  }
+
+  .tutorial-title {
+    font-size: 16px;
+  }
+
+  .tutorial-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+}
+
+/* Accessibility */
+.tutorial-btn:focus-visible {
+  outline: 2px solid #4CAF50;
+  outline-offset: 2px;
+}
+
+/* Animation for step transitions */
+.tutorial-tooltip.step-transition {
+  animation: tutorial-step-change 0.3s ease;
+}
+
+@keyframes tutorial-step-change {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
