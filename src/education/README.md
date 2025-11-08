@@ -1,219 +1,165 @@
-# Guided Tour System
+# Educational Features
 
-The Guided Tour system provides thematic, step-by-step tours for different TDS concepts. It's designed to help users learn about the Theory of Dynamic Symmetry through interactive, guided experiences.
+This directory contains educational components for the TDS Web Simulation.
 
-## Features
+## Components
 
-- **5 Pre-built Tours**: Covering basics to advanced physics concepts
-- **Interactive Steps**: Tours can trigger actions and wait for user interaction
-- **Progress Tracking**: Completion status saved in localStorage
-- **Responsive Design**: Works on desktop, tablet, and mobile
-- **Dark Mode Support**: Automatically adapts to user's color scheme preference
-- **Element Highlighting**: Draws attention to relevant UI elements
-- **Smart Positioning**: Tooltips automatically position around highlighted elements
+### 1. GuidedTour.ts
+Provides thematic guided tours through different aspects of TDS theory:
+- Symmetry Basics
+- Anomaly Dynamics
+- Time Reversibility
+- Energy Conservation
+- Physics Problems
 
-## Available Tours
+### 2. MultimediaTutorial.ts
+Comprehensive tutorial system supporting multiple content formats:
+- **Text Tutorials**: Rich HTML content with explanations
+- **Video Tutorials**: Video player with chapters and subtitles
+- **Interactive Demos**: Hands-on simulation demonstrations
+- **Animated Demos**: Step-by-step animated explanations
 
-### 1. Symmetry Basics (5 minutes)
-**Category**: Basics  
-**Topics Covered**:
-- Understanding symmetry in TDS
-- Lattice structure and node states
-- Symmetry strength parameter
-- Observing symmetry evolution
-- Reading symmetry metrics
+#### Features:
+- Progress tracking and persistence
+- Difficulty levels (beginner, intermediate, advanced)
+- Navigation between tutorials
+- Completion tracking
+- Responsive design
 
-### 2. Anomaly Dynamics (7 minutes)
-**Category**: Advanced  
-**Topics Covered**:
-- What are anomalies
-- Creating anomalies interactively
-- Anomaly propagation patterns
-- Tracking anomaly statistics
-- Spontaneous anomaly formation
-- Visual effects and energy impact
-
-### 3. Time Reversibility (6 minutes)
-**Category**: Advanced  
-**Topics Covered**:
-- Time-symmetric nature of TDS
-- Timeline controls
-- Forward and reverse playback
-- Timeline scrubber usage
-- Bookmarking states
-- Time direction indicators
-
-### 4. Energy Conservation (6 minutes)
-**Category**: Advanced  
-**Topics Covered**:
-- Energy in TDS framework
-- Energy distribution charts
-- Node energy levels
-- Energy flow visualization
-- Symmetric vs asymmetric energy
-- Energy gradients and conservation verification
-
-### 5. Physics Problems (8 minutes)
-**Category**: Physics  
-**Topics Covered**:
-- TDS approach to unsolved problems
-- Physics problems panel
-- Available problem scenarios
-- Problem descriptions and context
-- TDS vs Standard Model comparison
-- Experimental data overlay
-- Quantitative metrics
-- Research references
-
-## Usage
-
-### Basic Integration
-
+#### Usage:
 ```typescript
-import { GuidedTour } from './education/GuidedTour.js';
+import { MultimediaTutorial } from './education/MultimediaTutorial.js';
 
-// Initialize with your app instance
-const guidedTour = new GuidedTour({
-  simulation: mySimulation,
-  renderer: myRenderer,
-  showNotification: (msg) => console.log(msg)
+const tutorial = new MultimediaTutorial();
+
+// Open a specific tutorial
+tutorial.open('intro-tds');
+
+// Get all tutorials
+const allTutorials = tutorial.getTutorials();
+
+// Get tutorials by difficulty
+const beginnerTutorials = tutorial.getTutorialsByDifficulty('beginner');
+
+// Check progress
+const progress = tutorial.getProgress('intro-tds');
+```
+
+## Integration with Main Application
+
+### Beginner/Expert Mode
+The InfoPanel component now includes a beginner/expert mode toggle that:
+- Adjusts UI complexity based on user expertise
+- Shows/hides advanced features
+- Modifies tooltip detail levels
+- Persists preference in localStorage
+
+The mode can be accessed via Settings tab in the Info Panel.
+
+### Real-Time Annotations
+The AnnotationSystem automatically detects and displays significant simulation events:
+- Anomaly spikes
+- Energy changes
+- Symmetry transitions
+- System equilibrium
+- Cascading effects
+- Oscillating patterns
+
+#### Features:
+- Natural language descriptions
+- Priority-based display
+- Automatic cleanup
+- Configurable thresholds
+- Enable/disable toggle
+
+#### Usage:
+```typescript
+import { AnnotationSystem } from './ui/AnnotationSystem.js';
+
+const annotations = new AnnotationSystem();
+
+// Analyze simulation state
+annotations.analyzeState(currentSimulationState);
+
+// Enable/disable
+annotations.setEnabled(true);
+
+// Add custom annotation
+annotations.addCustomAnnotation('Custom message', 'info', 3000);
+
+// Configure thresholds
+annotations.setThresholds({
+  anomalySpike: 10,
+  energyChange: 0.3
 });
-
-// Start a specific tour
-guidedTour.startTour('symmetry-basics');
 ```
 
-### With Tour Menu
+## Tutorial Content
+
+### Built-in Tutorials
+
+1. **Introduction to TDS** (Beginner, Text)
+   - What is TDS?
+   - Key concepts
+   - Why study TDS?
+
+2. **Understanding the Lattice** (Beginner, Interactive)
+   - Lattice structure exploration
+   - Node interactions
+
+3. **Symmetry Breaking** (Intermediate, Animated)
+   - Initial symmetric state
+   - Introducing anomalies
+   - Propagation patterns
+   - New equilibrium
+
+4. **Time Reversibility** (Intermediate, Text)
+   - Reversible dynamics explanation
+   - Information conservation
+   - Practical applications
+
+5. **Energy and Information Flow** (Advanced, Animated)
+   - Energy concentration
+   - Energy distribution
+   - Flow visualization
+
+### Adding Custom Tutorials
+
+To add custom tutorials, extend the `loadTutorialLibrary()` method in MultimediaTutorial.ts:
 
 ```typescript
-import { initializeGuidedTours, createTourMenu } from './education/GuidedTourIntegration.example.js';
-
-// Initialize tours
-const guidedTour = initializeGuidedTours(app);
-
-// Create and add menu
-const tourMenu = createTourMenu(guidedTour);
-document.body.appendChild(tourMenu);
-```
-
-### Checking Completion Status
-
-```typescript
-// Check if a tour has been completed
-if (guidedTour.isTourCompleted('symmetry-basics')) {
-  console.log('User has completed Symmetry Basics tour');
-}
-
-// Get all available tours
-const allTours = guidedTour.getAvailableTours();
-
-// Get tours by category
-const basicTours = guidedTour.getToursByCategory('basics');
-const advancedTours = guidedTour.getToursByCategory('advanced');
-const physicsTours = guidedTour.getToursByCategory('physics');
-```
-
-### Resetting Progress
-
-```typescript
-// Reset all tour completion status
-guidedTour.resetAllProgress();
-```
-
-## Tour Structure
-
-Each tour consists of steps with the following properties:
-
-```typescript
-interface TourStep {
-  id: string;                    // Unique step identifier
-  title: string;                 // Step title
-  description: string;           // Step description
-  target: string | null;         // CSS selector for element to highlight
-  position: 'top' | 'bottom' | 'left' | 'right' | 'center';
-  action?: () => void;           // Optional action to execute
-  waitForInteraction?: boolean;  // Wait for user interaction before proceeding
+{
+  id: 'custom-tutorial',
+  title: 'Custom Tutorial Title',
+  description: 'Brief description',
+  type: 'text', // or 'video', 'interactive', 'animated'
+  content: 'Tutorial content here',
+  difficulty: 'beginner',
+  prerequisites: ['intro-tds'], // optional
 }
 ```
 
 ## Styling
 
-The tour system uses the `styles/guided-tour.css` stylesheet. Key classes:
+All educational components use consistent styling defined in:
+- `styles/main.css` - Main styles including mode toggle and annotations
+- `styles/tutorial.css` - Tutorial-specific styles
+- `styles/guided-tour.css` - Guided tour styles
 
-- `.guided-tour-overlay` - Full-screen overlay
-- `.guided-tour-highlight` - Highlighted element box
-- `.guided-tour-tooltip` - Tooltip container
-- `.guided-tour-btn` - Navigation buttons
+## Accessibility
 
-### Customization
-
-You can customize the appearance by overriding CSS variables or classes:
-
-```css
-.guided-tour-highlight {
-  border-color: #your-color;
-}
-
-.guided-tour-tooltip {
-  background: #your-background;
-}
-```
-
-## Best Practices
-
-1. **Start with Basics**: Encourage new users to start with "Symmetry Basics"
-2. **Progressive Learning**: Guide users through tours in order (basics → advanced → physics)
-3. **Show Completion**: Display checkmarks or badges for completed tours
-4. **Offer Choice**: Let users skip tours or exit at any time
-5. **Provide Context**: Show estimated time and description before starting
-
-## Requirements Satisfied
-
-This implementation satisfies **Requirement 9.4** from the TDS Web Simulation requirements:
-
-> **Guided tours SHALL explain key concepts step-by-step.**
-
-The system provides:
-- ✅ Thematic tour framework
-- ✅ "Symmetry Basics" tour
-- ✅ "Anomaly Dynamics" tour
-- ✅ "Time Reversibility" tour
-- ✅ "Energy Conservation" tour
-- ✅ "Physics Problems" tour
-
-## Browser Compatibility
-
-- Chrome 90+
-- Firefox 88+
-- Safari 14+
-- Edge 90+
-
-## Dependencies
-
-- None (vanilla TypeScript)
-- Requires `styles/guided-tour.css` to be loaded
-
-## File Structure
-
-```
-src/education/
-├── GuidedTour.ts                      # Main tour system class
-├── GuidedTourIntegration.example.ts   # Integration example
-└── README.md                          # This file
-
-styles/
-└── guided-tour.css                    # Tour styling
-```
+All educational features include:
+- Keyboard navigation support
+- ARIA labels for screen readers
+- High contrast theme support
+- Responsive design for mobile devices
+- Clear visual indicators
 
 ## Future Enhancements
 
-Potential improvements for future versions:
-
-- [ ] Add more tours for specific features
-- [ ] Support for video/animated content in steps
-- [ ] Tour analytics (track which steps users spend most time on)
-- [ ] Multi-language support for tour content
-- [ ] Custom tour creation by users
-- [ ] Tour sharing via URL parameters
-- [ ] Accessibility improvements (screen reader support)
-- [ ] Mobile-specific tour optimizations
+Potential additions (marked as optional in tasks):
+- Quiz system for knowledge testing
+- Lesson planner for educators
+- Presentation mode for teaching
+- Certificate generation
+- Collaborative learning features

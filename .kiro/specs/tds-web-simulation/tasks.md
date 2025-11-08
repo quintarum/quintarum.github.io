@@ -187,20 +187,20 @@
   - Add "Physics Problems" tour
   - _Requirements: 9.4_
 
-- [ ] 8. Implement educational features
+- [x] 8. Implement educational features
 - [x] 8.1 Create PresetsManager
   - Preset scenarios already implemented in Controls.ts (High Symmetry, Chaotic, Oscillating, Avalanche, Equilibrium)
   - Preset loading and description system functional
   - _Requirements: 4.5_
 
-- [ ] 8.2 Implement beginner/expert mode toggle
+- [x] 8.2 Implement beginner/expert mode toggle
   - Add mode toggle UI in settings or info panel
   - Create adaptive UI that shows/hides advanced features based on mode
   - Adjust tooltip and help text detail level
   - Persist mode preference in localStorage
   - _Requirements: 5.9_
 
-- [ ] 8.3 Implement real-time annotations system
+- [x] 8.3 Implement real-time annotations system
   - Create AnnotationSystem class for event detection
   - Implement automatic annotation display for significant events
   - Add natural language state descriptions
@@ -229,7 +229,7 @@
   - Create laser pointer tool
   - _Requirements: 9.1_
 
-- [ ] 8.8 Add multimedia tutorial support
+- [x] 8.8 Add multimedia tutorial support
   - Create video tutorial player component
   - Implement animated demonstration system
   - Add tutorial content loading from assets/tutorials/

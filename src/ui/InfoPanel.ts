@@ -8,6 +8,7 @@ export class InfoPanel {
   constructor() {
     this.isVisible = false;
     this.currentTab = 'theory';
+    this.mode = this.loadMode(); // 'beginner' or 'expert'
     
     this.glossary = {
       'TDS': {
@@ -100,6 +101,7 @@ export class InfoPanel {
             <button class="tab-btn" data-tab="glossary">Glossary</button>
             <button class="tab-btn" data-tab="documents">Documents</button>
             <button class="tab-btn" data-tab="help">Help</button>
+            <button class="tab-btn" data-tab="settings">Settings</button>
           </div>
 
           <div class="info-panel-content">
@@ -117,6 +119,10 @@ export class InfoPanel {
 
             <div class="tab-content" id="help-tab">
               ${this.createHelpContent()}
+            </div>
+
+            <div class="tab-content" id="settings-tab">
+              ${this.createSettingsContent()}
             </div>
           </div>
         </div>
@@ -274,8 +280,64 @@ export class InfoPanel {
     `;
   }
 
-  createHelpContent() {
+  createSettingsContent() {
     return `
+      <div class="settings-content">
+        <h3>Application Settings</h3>
+
+        <div class="settings-section">
+          <h4>User Experience Mode</h4>
+          <p class="settings-description">
+            Choose your experience level to adjust the interface complexity and detail level.
+          </p>
+          
+          <div class="mode-toggle-container">
+            <div class="mode-option ${this.mode === 'beginner' ? 'active' : ''}" data-mode="beginner">
+              <div class="mode-icon">🎓</div>
+              <h5>Beginner Mode</h5>
+              <p>Simplified interface with helpful tooltips and explanations. Perfect for learning TDS concepts.</p>
+              <ul class="mode-features">
+                <li>Simplified parameter controls</li>
+                <li>Detailed tooltips and help text</li>
+                <li>Guided tutorials and tours</li>
+                <li>Basic visualization options</li>
+              </ul>
+              <button class="mode-select-btn" data-mode="beginner">
+                ${this.mode === 'beginner' ? 'Currently Active' : 'Switch to Beginner'}
+              </button>
+            </div>
+
+            <div class="mode-option ${this.mode === 'expert' ? 'active' : ''}" data-mode="expert">
+              <div class="mode-icon">🔬</div>
+              <h5>Expert Mode</h5>
+              <p>Full control with advanced features and detailed analytics. For researchers and advanced users.</p>
+              <ul class="mode-features">
+                <li>All parameter controls visible</li>
+                <li>Advanced analytics and metrics</li>
+                <li>Custom physics problem testing</li>
+                <li>Export and data analysis tools</li>
+              </ul>
+              <button class="mode-select-btn" data-mode="expert">
+                ${this.mode === 'expert' ? 'Currently Active' : 'Switch to Expert'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h4>Current Mode: <span class="current-mode-label">${this.mode === 'beginner' ? 'Beginner' : 'Expert'}</span></h4>
+          <p class="mode-description">
+            ${this.mode === 'beginner' 
+              ? 'You are currently in Beginner Mode. The interface shows essential controls with helpful guidance.' 
+              : 'You are currently in Expert Mode. All advanced features and controls are available.'}
+          </p>
+        </div>
+      </div>
+    `;
+  }
+
+  createHelpContent() {
+    const beginnerHelp = `
       <div class="help-content">
         <h3>How to Use This Simulation</h3>
 
@@ -287,6 +349,34 @@ export class InfoPanel {
             <li>Try different <strong>Preset Scenarios</strong> to explore various behaviors</li>
             <li>Click on nodes to create anomalies manually</li>
           </ol>
+        </div>`;
+
+    const expertHelp = `
+      <div class="help-content">
+        <h3>Advanced Usage Guide</h3>
+
+        <div class="help-section">
+          <h4>Getting Started</h4>
+          <ol class="help-list">
+            <li>Use the <strong>Controls Panel</strong> to adjust simulation parameters</li>
+            <li>Click <strong>Play</strong> to start the simulation</li>
+            <li>Try different <strong>Preset Scenarios</strong> to explore various behaviors</li>
+            <li>Click on nodes to create anomalies manually</li>
+            <li>Access <strong>Physics Problems Panel</strong> for research scenarios</li>
+            <li>Use <strong>Comparison View</strong> for parameter sensitivity analysis</li>
+          </ol>
+        </div>`;
+
+    return (this.mode === 'beginner' ? beginnerHelp : expertHelp) + `
+
+        <div class="help-section">
+          <h4>Understanding the Visualization</h4>
+          <ul class="help-list">
+            <li><strong>Node Colors:</strong> Indicate the state (symmetric, asymmetric, anomaly)</li>
+            <li><strong>Connections:</strong> Show interactions between neighboring nodes</li>
+            <li><strong>Particle Trails:</strong> Visualize the flow of energy and information</li>
+            <li><strong>Mini-map:</strong> Provides an overview of the entire lattice</li>
+          </ul>
         </div>
 
         <div class="help-section">
@@ -303,13 +393,17 @@ export class InfoPanel {
           <h4>Key Parameters</h4>
           <dl class="parameter-help">
             <dt>Symmetry Strength</dt>
-            <dd>Controls how strongly nodes maintain symmetric states. Higher values create more stable patterns.</dd>
+            <dd>Controls how strongly nodes maintain symmetric states. Higher values create more stable patterns.${this.mode === 'expert' ? ' Range: 0.0-1.0, affects local energy calculations.' : ''}</dd>
             
             <dt>Anomaly Probability</dt>
-            <dd>Determines how likely anomalies are to form. Higher values create more dynamic, chaotic behavior.</dd>
+            <dd>Determines how likely anomalies are to form. Higher values create more dynamic, chaotic behavior.${this.mode === 'expert' ? ' Range: 0.0-1.0, influences spontaneous symmetry breaking.' : ''}</dd>
             
             <dt>Interaction Range</dt>
-            <dd>Sets the distance over which nodes influence each other. Larger ranges create more connected behavior.</dd>
+            <dd>Sets the distance over which nodes influence each other. Larger ranges create more connected behavior.${this.mode === 'expert' ? ' Range: 1.0-5.0 lattice units, determines neighbor influence radius.' : ''}</dd>
+            ${this.mode === 'expert' ? `
+            <dt>Time Step</dt>
+            <dd>Time increment for each simulation step. Smaller values give more accurate but slower simulations. Range: 0.01-0.5, affects numerical stability.</dd>
+            ` : ''}
           </dl>
         </div>
 
@@ -362,6 +456,16 @@ export class InfoPanel {
     // Tab switching
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', (e) => this.switchTab(e.target.dataset.tab));
+    });
+
+    // Mode selection buttons
+    document.querySelectorAll('.mode-select-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const mode = e.target.dataset.mode;
+        if (mode && mode !== this.mode) {
+          this.setMode(mode);
+        }
+      });
     });
 
     // Glossary search
@@ -441,5 +545,80 @@ export class InfoPanel {
   addContextualTooltip(element, text) {
     element.setAttribute('data-tooltip', text);
     element.classList.add('has-tooltip');
+  }
+
+  loadMode() {
+    try {
+      const stored = localStorage.getItem('tds_user_mode');
+      return stored === 'expert' ? 'expert' : 'beginner';
+    } catch {
+      return 'beginner';
+    }
+  }
+
+  setMode(mode) {
+    if (mode !== 'beginner' && mode !== 'expert') {
+      return;
+    }
+
+    this.mode = mode;
+    
+    // Save to localStorage
+    try {
+      localStorage.setItem('tds_user_mode', mode);
+    } catch (e) {
+      console.warn('Could not save user mode preference:', e);
+    }
+
+    // Update UI to reflect mode change
+    this.applyModeToUI();
+    
+    // Refresh current tab content
+    this.createUI();
+    this.attachEventListeners();
+    
+    // Re-show if was visible
+    if (this.isVisible) {
+      this.show();
+      this.switchTab(this.currentTab);
+    }
+
+    // Dispatch event for other components to react
+    document.dispatchEvent(new CustomEvent('modeChanged', { 
+      detail: { mode: this.mode } 
+    }));
+  }
+
+  applyModeToUI() {
+    // Add or remove mode class from body
+    document.body.classList.remove('mode-beginner', 'mode-expert');
+    document.body.classList.add(`mode-${this.mode}`);
+
+    // Hide/show advanced features based on mode
+    const advancedElements = document.querySelectorAll('.advanced-feature');
+    advancedElements.forEach(el => {
+      if (this.mode === 'beginner') {
+        el.style.display = 'none';
+      } else {
+        el.style.display = '';
+      }
+    });
+
+    // Adjust tooltip detail level
+    const tooltips = document.querySelectorAll('[data-tooltip]');
+    tooltips.forEach(el => {
+      const fullTooltip = el.getAttribute('data-tooltip-full');
+      const simpleTooltip = el.getAttribute('data-tooltip-simple');
+      
+      if (fullTooltip && simpleTooltip) {
+        el.setAttribute('data-tooltip', 
+          this.mode === 'expert' ? fullTooltip : simpleTooltip
+        );
+      }
+    });
+  }
+
+  getMode() {
+    return this.mode;
   }
 }
