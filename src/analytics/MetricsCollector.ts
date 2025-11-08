@@ -575,6 +575,267 @@ export class MetricsCollector {
     return this;
   }
 
+  /**
+   * Perform Fourier analysis to detect periodicity in data
+   */
+  calculateFourierAnalysis(metric: string): {
+    frequencies: number[];
+    amplitudes: number[];
+    dominantFrequency: number;
+    dominantPeriod: number;
+  } {
+    const series = this.getTimeSeries(metric).values;
+    const n = series.length;
+
+    if (n < 4) {
+      return {
+        frequencies: [],
+        amplitudes: [],
+        dominantFrequency: 0,
+        dominantPeriod: 0,
+      };
+    }
+
+    // Simple DFT (Discrete Fourier Transform)
+    const frequencies: number[] = [];
+    const amplitudes: number[] = [];
+
+    // Only calculate for first half of frequencies (Nyquist limit)
+    const maxFreq = Math.floor(n / 2);
+
+    for (let k = 0; k < maxFreq; k++) {
+      let real = 0;
+      let imag = 0;
+
+      for (let t = 0; t < n; t++) {
+        const angle = (2 * Math.PI * k * t) / n;
+        real += series[t] * Math.cos(angle);
+        imag += series[t] * Math.sin(angle);
+      }
+
+      const amplitude = Math.sqrt(real * real + imag * imag) / n;
+      const frequency = k / n;
+
+      frequencies.push(frequency);
+      amplitudes.push(amplitude);
+    }
+
+    // Find dominant frequency (excluding DC component at k=0)
+    let maxAmplitude = 0;
+    let dominantIndex = 0;
+
+    for (let i = 1; i < amplitudes.length; i++) {
+      if (amplitudes[i] > maxAmplitude) {
+        maxAmplitude = amplitudes[i];
+        dominantIndex = i;
+      }
+    }
+
+    const dominantFrequency = frequencies[dominantIndex] || 0;
+    const dominantPeriod = dominantFrequency > 0 ? 1 / dominantFrequency : 0;
+
+    return {
+      frequencies,
+      amplitudes,
+      dominantFrequency,
+      dominantPeriod,
+    };
+  }
+
+  /**
+   * Detect if a metric shows periodic behavior
+   */
+  detectPeriodicity(metric: string, threshold: number = 0.1): {
+    isPeriodic: boolean;
+    period: number;
+    confidence: number;
+  } {
+    const fourier = this.calculateFourierAnalysis(metric);
+
+    if (fourier.amplitudes.length === 0) {
+      return { isPeriodic: false, period: 0, confidence: 0 };
+    }
+
+    // Calculate total power
+    const totalPower = fourier.amplitudes.reduce((sum, amp) => sum + amp * amp, 0);
+
+    // Find dominant frequency power (excluding DC)
+    const dominantPower =
+      fourier.amplitudes.length > 1
+        ? Math.max(...fourier.amplitudes.slice(1).map((a) => a * a))
+        : 0;
+
+    // Confidence is ratio of dominant frequency power to total power
+    const confidence = totalPower > 0 ? dominantPower / totalPower : 0;
+
+    return {
+      isPeriodic: confidence > threshold,
+      period: fourier.dominantPeriod,
+      confidence,
+    };
+  }
+
+  /**
+   * Perform statistical significance test (t-test) between two metrics
+   */
+  performTTest(
+    metric1: string,
+    metric2: string
+  ): {
+    tStatistic: number;
+    pValue: number;
+    significant: boolean;
+    degreesOfFreedom: number;
+  } {
+    const series1 = this.getTimeSeries(metric1).values;
+    const series2 = this.getTimeSeries(metric2).values;
+
+    const n1 = series1.length;
+    const n2 = series2.length;
+
+    if (n1 < 2 || n2 < 2) {
+      return {
+        tStatistic: 0,
+        pValue: 1,
+        significant: false,
+        degreesOfFreedom: 0,
+      };
+    }
+
+    // Calculate means
+    const mean1 = series1.reduce((sum, val) => sum + val, 0) / n1;
+    const mean2 = series2.reduce((sum, val) => sum + val, 0) / n2;
+
+    // Calculate variances
+    const var1 =
+      series1.reduce((sum, val) => sum + Math.pow(val - mean1, 2), 0) / (n1 - 1);
+    const var2 =
+      series2.reduce((sum, val) => sum + Math.pow(val - mean2, 2), 0) / (n2 - 1);
+
+    // Pooled standard deviation
+    const pooledStd = Math.sqrt(var1 / n1 + var2 / n2);
+
+    // t-statistic
+    const tStatistic = pooledStd > 0 ? (mean1 - mean2) / pooledStd : 0;
+
+    // Degrees of freedom (Welch-Satterthwaite equation)
+    const df =
+      var1 / n1 + var2 / n2 > 0
+        ? Math.pow(var1 / n1 + var2 / n2, 2) /
+          (Math.pow(var1 / n1, 2) / (n1 - 1) + Math.pow(var2 / n2, 2) / (n2 - 1))
+        : 0;
+
+    // Approximate p-value using t-distribution approximation
+    // For simplicity, using normal approximation for large samples
+    const pValue = this._approximatePValue(Math.abs(tStatistic), df);
+
+    return {
+      tStatistic,
+      pValue,
+      significant: pValue < 0.05, // 5% significance level
+      degreesOfFreedom: df,
+    };
+  }
+
+  /**
+   * Approximate p-value for t-test
+   * Uses normal approximation for large df, more accurate for df > 30
+   */
+  private _approximatePValue(t: number, df: number): number {
+    if (df < 1) return 1;
+
+    // For large df, t-distribution approaches normal distribution
+    if (df > 30) {
+      // Standard normal approximation
+      return 2 * (1 - this._normalCDF(t));
+    }
+
+    // For smaller df, use a simple approximation
+    // This is a rough approximation and not as accurate as proper t-distribution
+    const x = df / (df + t * t);
+    const p = 1 - Math.pow(x, df / 2);
+
+    return Math.min(1, Math.max(0, p));
+  }
+
+  /**
+   * Cumulative distribution function for standard normal distribution
+   */
+  private _normalCDF(x: number): number {
+    // Approximation using error function
+    const t = 1 / (1 + 0.2316419 * Math.abs(x));
+    const d = 0.3989423 * Math.exp((-x * x) / 2);
+    const p =
+      d *
+      t *
+      (0.3193815 +
+        t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+
+    return x > 0 ? 1 - p : p;
+  }
+
+  /**
+   * Calculate autocorrelation for a metric at different lags
+   */
+  calculateAutocorrelation(metric: string, maxLag: number = 50): number[] {
+    const series = this.getTimeSeries(metric).values;
+    const n = series.length;
+
+    if (n < 2) return [];
+
+    const mean = series.reduce((sum, val) => sum + val, 0) / n;
+    const variance = series.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / n;
+
+    if (variance === 0) return Array(maxLag).fill(0);
+
+    const autocorr: number[] = [];
+
+    for (let lag = 0; lag < Math.min(maxLag, n); lag++) {
+      let sum = 0;
+      for (let i = 0; i < n - lag; i++) {
+        sum += (series[i] - mean) * (series[i + lag] - mean);
+      }
+      autocorr.push(sum / (n * variance));
+    }
+
+    return autocorr;
+  }
+
+  /**
+   * Detect anomalies in time series using statistical methods
+   */
+  detectAnomalies(
+    metric: string,
+    threshold: number = 3
+  ): Array<{ index: number; value: number; zScore: number }> {
+    const series = this.getTimeSeries(metric).values;
+    const n = series.length;
+
+    if (n < 10) return [];
+
+    const mean = series.reduce((sum, val) => sum + val, 0) / n;
+    const stdDev = Math.sqrt(
+      series.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / n
+    );
+
+    if (stdDev === 0) return [];
+
+    const anomalies: Array<{ index: number; value: number; zScore: number }> = [];
+
+    for (let i = 0; i < n; i++) {
+      const zScore = (series[i] - mean) / stdDev;
+      if (Math.abs(zScore) > threshold) {
+        anomalies.push({
+          index: i,
+          value: series[i],
+          zScore,
+        });
+      }
+    }
+
+    return anomalies;
+  }
+
   export(): {
     timeSeries: TimeSeriesData;
     statistics: Record<string, CalculatedStatistics>;

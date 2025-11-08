@@ -3582,3 +3582,21 @@ body.mode-expert .beginner-only {
   margin-left: 0;
   margin-right: 8px;
 }
+
+/* Export Buttons */
+#export-csv-btn:hover,
+#export-json-btn:hover,
+#export-chart-btn:hover,
+#export-pdf-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  filter: brightness(1.1);
+}
+
+#export-csv-btn:active,
+#export-json-btn:active,
+#export-chart-btn:active,
+#export-pdf-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}

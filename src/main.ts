@@ -7,6 +7,7 @@ import { Lattice, LatticeStatistics } from './core/Lattice.js';
 import { Simulation } from './core/Simulation.js';
 import { Renderer2D } from './rendering/Renderer2D.js';
 import { initI18n, t } from './i18n/i18n.js';
+import { DataExporter } from './utils/DataExporter.js';
 
 interface AppInstance {
   simulation: Simulation | null;
@@ -133,9 +134,27 @@ function initApp(): void {
                 <div id="stats-content"></div>
               </div>
               
-              <div style="padding: 15px; background: #16213e; border-radius: 8px;">
+              <div style="padding: 15px; background: #16213e; border-radius: 8px; margin-bottom: 15px;">
                 <h3 style="margin: 0 0 10px 0; color: #4CAF50; font-size: 16px;">${t('stats.title')}</h3>
                 <canvas id="chart-canvas" width="350" height="200" style="width: 100%; height: auto;"></canvas>
+              </div>
+              
+              <div style="padding: 15px; background: #16213e; border-radius: 8px;">
+                <h3 style="margin: 0 0 10px 0; color: #4CAF50; font-size: 16px;">📊 ${t('export.title')}</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <button id="export-csv-btn" style="padding: 10px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; transition: all 0.2s;">
+                    📄 ${t('export.csv')}
+                  </button>
+                  <button id="export-json-btn" style="padding: 10px; background: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; transition: all 0.2s;">
+                    📋 ${t('export.json')}
+                  </button>
+                  <button id="export-chart-btn" style="padding: 10px; background: #FF9800; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; transition: all 0.2s;">
+                    📈 ${t('export.chart')}
+                  </button>
+                  <button id="export-pdf-btn" style="padding: 10px; background: #F44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; transition: all 0.2s;">
+                    📑 ${t('export.pdf')}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -282,6 +301,68 @@ function setupControls(simulation: Simulation, renderer: Renderer2D, lattice: La
         autoAnomalyInterval = null;
       }
     }
+  });
+
+  // Export buttons
+  const exportCsvBtn = document.getElementById('export-csv-btn');
+  const exportJsonBtn = document.getElementById('export-json-btn');
+  const exportChartBtn = document.getElementById('export-chart-btn');
+  const exportPdfBtn = document.getElementById('export-pdf-btn');
+
+  // Collect simulation data for export
+  const collectExportData = () => {
+    const stats = lattice.getStatistics();
+    const state = simulation.getState();
+    return {
+      time: state.time,
+      stepCount: state.stepCount,
+      statistics: {
+        symmetric: stats.symmetric,
+        asymmetric: stats.asymmetric,
+        anomalies: stats.anomalies,
+        total: stats.total,
+        avgEnergy: stats.avgEnergy,
+      },
+    };
+  };
+
+  exportCsvBtn?.addEventListener('click', () => {
+    const data = [collectExportData()];
+    DataExporter.exportToCSV(data, { filename: 'tds-simulation' });
+    exportCsvBtn.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+      exportCsvBtn.style.transform = 'scale(1)';
+    }, 100);
+  });
+
+  exportJsonBtn?.addEventListener('click', () => {
+    const data = collectExportData();
+    DataExporter.exportToJSON(data, { filename: 'tds-simulation' });
+    exportJsonBtn.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+      exportJsonBtn.style.transform = 'scale(1)';
+    }, 100);
+  });
+
+  exportChartBtn?.addEventListener('click', () => {
+    const chartCanvas = document.getElementById('chart-canvas') as HTMLCanvasElement;
+    if (chartCanvas) {
+      DataExporter.exportChartToPNG(chartCanvas, { filename: 'tds-chart' });
+      exportChartBtn.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        exportChartBtn.style.transform = 'scale(1)';
+      }, 100);
+    }
+  });
+
+  exportPdfBtn?.addEventListener('click', () => {
+    const data = [collectExportData()];
+    const chartCanvas = document.getElementById('chart-canvas') as HTMLCanvasElement;
+    DataExporter.exportToPDF(data, chartCanvas, { filename: 'tds-report' });
+    exportPdfBtn.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+      exportPdfBtn.style.transform = 'scale(1)';
+    }, 100);
   });
 }
 

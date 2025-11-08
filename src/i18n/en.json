@@ -32,6 +32,13 @@
   "tutorial": {
     "welcome": "Welcome to TDS Web Simulation"
   },
+  "export": {
+    "title": "Export Data",
+    "csv": "Export CSV",
+    "json": "Export JSON",
+    "chart": "Export Chart",
+    "pdf": "Export PDF Report"
+  },
   "theory": {
     "title": "How it works (TDS Theory)",
     "symmetricNodes": "Symmetric nodes",
