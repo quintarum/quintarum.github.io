@@ -1,16 +1,62 @@
-// @ts-nocheck
- 
 /**
  * Tutorial class for interactive step-by-step guidance
  * Provides overlay with element highlighting, tooltips, and navigation
  */
+
+interface TutorialStep {
+  id: string;
+  title: string;
+  description: string;
+  target: string | null;
+  position: 'top' | 'bottom' | 'left' | 'right' | 'center';
+  interactive?: boolean;
+}
+
+interface AppInstance {
+  showNotification?: (message: string) => void;
+}
+
+interface CompletionStatus {
+  [key: string]: boolean;
+}
+
 export class Tutorial {
-  constructor(app) {
+  private app: AppInstance;
+  private steps: TutorialStep[];
+  private currentStep: number;
+  private isActive: boolean;
+  private completedTutorials: CompletionStatus;
+  
+  // DOM elements
+  private overlay: HTMLDivElement | null;
+  private tooltip: HTMLDivElement | null;
+  private progressBar: HTMLDivElement | null;
+  private progressText: HTMLSpanElement | null;
+  private highlightBox: HTMLDivElement | null;
+  private titleElement: HTMLHeadingElement | null;
+  private descriptionElement: HTMLParagraphElement | null;
+  private prevButton: HTMLButtonElement | null;
+  private nextButton: HTMLButtonElement | null;
+  private skipButton: HTMLButtonElement | null;
+
+  constructor(app: AppInstance) {
     this.app = app;
     this.steps = [];
     this.currentStep = 0;
     this.isActive = false;
     this.completedTutorials = this.loadCompletionStatus();
+    
+    // Initialize DOM elements as null
+    this.overlay = null;
+    this.tooltip = null;
+    this.progressBar = null;
+    this.progressText = null;
+    this.highlightBox = null;
+    this.titleElement = null;
+    this.descriptionElement = null;
+    this.prevButton = null;
+    this.nextButton = null;
+    this.skipButton = null;
     
     // DOM elements
     this.overlay = null;
@@ -25,7 +71,7 @@ export class Tutorial {
   /**
    * Initialize DOM elements for tutorial overlay
    */
-  initializeDOM() {
+  initializeDOM(): void {
     // Create overlay container
     this.overlay = document.createElement('div');
     this.overlay.className = 'tutorial-overlay';
@@ -62,13 +108,13 @@ export class Tutorial {
     document.body.appendChild(this.overlay);
     
     // Cache DOM references
-    this.progressBar = this.tooltip.querySelector('.tutorial-progress-bar');
-    this.progressText = this.tooltip.querySelector('.tutorial-progress-text');
-    this.titleElement = this.tooltip.querySelector('.tutorial-title');
-    this.descriptionElement = this.tooltip.querySelector('.tutorial-description');
-    this.prevButton = this.tooltip.querySelector('.tutorial-prev');
-    this.nextButton = this.tooltip.querySelector('.tutorial-next');
-    this.skipButton = this.tooltip.querySelector('.tutorial-skip');
+    this.progressBar = this.tooltip.querySelector('.tutorial-progress-bar') as HTMLDivElement;
+    this.progressText = this.tooltip.querySelector('.tutorial-progress-text') as HTMLSpanElement;
+    this.titleElement = this.tooltip.querySelector('.tutorial-title') as HTMLHeadingElement;
+    this.descriptionElement = this.tooltip.querySelector('.tutorial-description') as HTMLParagraphElement;
+    this.prevButton = this.tooltip.querySelector('.tutorial-prev') as HTMLButtonElement;
+    this.nextButton = this.tooltip.querySelector('.tutorial-next') as HTMLButtonElement;
+    this.skipButton = this.tooltip.querySelector('.tutorial-skip') as HTMLButtonElement;
     
     // Bind event listeners
     this.prevButton.addEventListener('click', () => this.previousStep());
@@ -87,7 +133,7 @@ export class Tutorial {
   /**
    * Load tutorial steps configuration
    */
-  loadTutorialSteps() {
+  loadTutorialSteps(): void {
     this.steps = [
       {
         id: 'welcome',
@@ -159,30 +205,34 @@ export class Tutorial {
   /**
    * Start the tutorial from the beginning
    */
-  start() {
+  start(): void {
     if (this.isActive) {
       return;
     }
     
     this.isActive = true;
     this.currentStep = 0;
-    this.overlay.style.display = 'block';
+    if (this.overlay) {
+      this.overlay.style.display = 'block';
+    }
     this.showStep(this.currentStep);
   }
 
   /**
    * Stop the tutorial
    */
-  stop() {
+  stop(): void {
     this.isActive = false;
-    this.overlay.style.display = 'none';
+    if (this.overlay) {
+      this.overlay.style.display = 'none';
+    }
     this.clearHighlight();
   }
 
   /**
    * Move to the next tutorial step
    */
-  nextStep() {
+  nextStep(): void {
     if (!this.isActive) {
       return;
     }
@@ -199,7 +249,7 @@ export class Tutorial {
   /**
    * Move to the previous tutorial step
    */
-  previousStep() {
+  previousStep(): void {
     if (!this.isActive || this.currentStep === 0) {
       return;
     }
@@ -211,7 +261,7 @@ export class Tutorial {
   /**
    * Skip the tutorial
    */
-  skip() {
+  skip(): void {
     if (confirm('Are you sure you want to skip the tutorial? You can restart it anytime from the help menu.')) {
       this.stop();
     }
@@ -220,7 +270,7 @@ export class Tutorial {
   /**
    * Complete the tutorial
    */
-  complete() {
+  complete(): void {
     this.markAsCompleted('main');
     this.stop();
     
@@ -233,22 +283,30 @@ export class Tutorial {
   /**
    * Show a specific tutorial step
    */
-  showStep(stepIndex) {
+  showStep(stepIndex: number): void {
     const step = this.steps[stepIndex];
     if (!step) {
       return;
     }
     
     // Update content
-    this.titleElement.textContent = step.title;
-    this.descriptionElement.textContent = step.description;
+    if (this.titleElement) {
+      this.titleElement.textContent = step.title;
+    }
+    if (this.descriptionElement) {
+      this.descriptionElement.textContent = step.description;
+    }
     
     // Update progress
     this.updateProgress();
     
     // Update navigation buttons
-    this.prevButton.disabled = stepIndex === 0;
-    this.nextButton.textContent = stepIndex === this.steps.length - 1 ? 'Finish' : 'Next';
+    if (this.prevButton) {
+      this.prevButton.disabled = stepIndex === 0;
+    }
+    if (this.nextButton) {
+      this.nextButton.textContent = stepIndex === this.steps.length - 1 ? 'Finish' : 'Next';
+    }
     
     // Highlight target element
     if (step.target) {
@@ -268,9 +326,9 @@ export class Tutorial {
   /**
    * Highlight a specific element
    */
-  highlightElement(selector) {
+  highlightElement(selector: string): void {
     const element = document.querySelector(selector);
-    if (!element) {
+    if (!element || !this.highlightBox) {
       this.clearHighlight();
       return;
     }
@@ -292,17 +350,19 @@ export class Tutorial {
   /**
    * Clear element highlighting
    */
-  clearHighlight() {
-    this.highlightBox.style.display = 'none';
-    this.highlightBox.classList.remove('pulse');
+  clearHighlight(): void {
+    if (this.highlightBox) {
+      this.highlightBox.style.display = 'none';
+      this.highlightBox.classList.remove('pulse');
+    }
   }
 
   /**
    * Position tooltip relative to target element
    */
-  positionTooltip(selector, position = 'bottom') {
+  positionTooltip(selector: string, position: 'top' | 'bottom' | 'left' | 'right' | 'center' = 'bottom'): void {
     const element = document.querySelector(selector);
-    if (!element) {
+    if (!element || !this.tooltip) {
       this.centerTooltip();
       return;
     }
@@ -347,25 +407,31 @@ export class Tutorial {
   /**
    * Center tooltip in viewport
    */
-  centerTooltip() {
-    this.tooltip.style.left = '50%';
-    this.tooltip.style.top = '50%';
-    this.tooltip.style.transform = 'translate(-50%, -50%)';
+  centerTooltip(): void {
+    if (this.tooltip) {
+      this.tooltip.style.left = '50%';
+      this.tooltip.style.top = '50%';
+      this.tooltip.style.transform = 'translate(-50%, -50%)';
+    }
   }
 
   /**
    * Update progress indicator
    */
-  updateProgress() {
+  updateProgress(): void {
     const progress = ((this.currentStep + 1) / this.steps.length) * 100;
-    this.progressBar.style.width = `${progress}%`;
-    this.progressText.textContent = `Step ${this.currentStep + 1} of ${this.steps.length}`;
+    if (this.progressBar) {
+      this.progressBar.style.width = `${progress}%`;
+    }
+    if (this.progressText) {
+      this.progressText.textContent = `Step ${this.currentStep + 1} of ${this.steps.length}`;
+    }
   }
 
   /**
    * Setup interactive step behavior
    */
-  setupInteractiveStep(step) {
+  setupInteractiveStep(step: TutorialStep): void {
     // For interactive steps, we can add special event listeners
     // For example, waiting for user to click on canvas
     if (step.id === 'anomaly-creation') {
@@ -383,10 +449,10 @@ export class Tutorial {
   /**
    * Load completion status from localStorage
    */
-  loadCompletionStatus() {
+  loadCompletionStatus(): CompletionStatus {
     try {
       const stored = localStorage.getItem('tds_tutorial_completed');
-      return stored ? JSON.parse(stored) : {};
+      return stored ? JSON.parse(stored) as CompletionStatus : {};
     } catch {
       return {};
     }
@@ -395,7 +461,7 @@ export class Tutorial {
   /**
    * Mark tutorial as completed
    */
-  markAsCompleted(tutorialId) {
+  markAsCompleted(tutorialId: string): void {
     this.completedTutorials[tutorialId] = true;
     try {
       localStorage.setItem('tds_tutorial_completed', JSON.stringify(this.completedTutorials));
@@ -407,14 +473,14 @@ export class Tutorial {
   /**
    * Check if tutorial has been completed
    */
-  isCompleted(tutorialId = 'main') {
+  isCompleted(tutorialId: string = 'main'): boolean {
     return this.completedTutorials[tutorialId] === true;
   }
 
   /**
    * Reset tutorial completion status
    */
-  resetCompletion(tutorialId = 'main') {
+  resetCompletion(tutorialId: string | null = 'main'): void {
     if (tutorialId) {
       delete this.completedTutorials[tutorialId];
     } else {
@@ -430,7 +496,7 @@ export class Tutorial {
   /**
    * Handle window resize
    */
-  handleResize() {
+  handleResize(): void {
     if (this.isActive && this.currentStep < this.steps.length) {
       const step = this.steps[this.currentStep];
       if (step.target) {
