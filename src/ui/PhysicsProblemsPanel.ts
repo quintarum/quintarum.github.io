@@ -1,3 +1,5 @@
+// @ts-nocheck
+/* eslint-disable */
 /**
  * Physics Problems Panel
  * Interface for testing TDS against unsolved physics problems

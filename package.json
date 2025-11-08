@@ -5,12 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc && vite build",
     "preview": "vite preview",
-    "lint": "eslint src/**/*.js",
-    "lint:fix": "eslint src/**/*.js --fix",
-    "format": "prettier --write \"src/**/*.{js,css}\" \"styles/**/*.css\" \"*.{js,json,html}\"",
-    "format:check": "prettier --check \"src/**/*.{js,css}\" \"styles/**/*.css\" \"*.{js,json,html}\""
+    "type-check": "tsc --noEmit",
+    "lint": "npm run type-check && eslint src/**/*.{js,ts} --max-warnings 0",
+    "lint:fix": "eslint src/**/*.{js,ts} --max-warnings 0 --fix"
   },
   "repository": {
     "type": "git",
@@ -26,10 +25,16 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/papaparse": "^5.3.15",
+    "@types/three": "^0.181.0",
+    "@typescript-eslint/eslint-plugin": "^8.18.2",
+    "@typescript-eslint/parser": "^8.18.2",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
     "patch-package": "^8.0.1",
     "prettier": "^3.6.2",
+    "typescript": "^5.7.2",
     "vite": "^7.2.2",
     "vite-plugin-pwa": "^1.1.0"
   },
@@ -38,5 +43,15 @@
     "i18next": "^25.6.1",
     "papaparse": "^5.5.3",
     "three": "^0.181.0"
+  },
+  "prettier": {
+    "semi": true,
+    "trailingComma": "es5",
+    "singleQuote": true,
+    "printWidth": 100,
+    "tabWidth": 2,
+    "useTabs": false,
+    "arrowParens": "avoid",
+    "endOfLine": "lf"
   }
 }

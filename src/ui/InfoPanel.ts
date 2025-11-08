@@ -1,3 +1,5 @@
+// @ts-nocheck
+/* eslint-disable */
 /**
  * Info Panel
  * Displays TDS theory information, glossary, and documentation

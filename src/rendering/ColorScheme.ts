@@ -1,18 +1,51 @@
+import { Node } from '../core/Node.js';
+
+type Theme = 'light' | 'dark';
+type PaletteName = 'default' | 'energy' | 'phase';
+
+interface ColorPair {
+  base: string;
+  glow: string;
+}
+
+interface ThemeColors {
+  background: string;
+  grid: string;
+  connection: string;
+  text: string;
+  [key: string]: string | ColorPair;
+}
+
+interface RGB {
+  r: number;
+  g: number;
+  b: number;
+}
+
+interface LegendEntry {
+  color: string;
+  label: string;
+  description: string;
+}
+
 /**
  * ColorScheme class - Manages color palettes and mappings for visualization
  * Provides scientifically-informed color schemes with theme support
  */
 export class ColorScheme {
-  constructor(theme = 'light') {
+  private theme: Theme;
+  private currentPalette: PaletteName;
+  private palettes: Record<PaletteName, Record<Theme, ThemeColors>>;
+
+  constructor(theme: Theme = 'light') {
     this.theme = theme;
     this.currentPalette = 'default';
+     
+    this.palettes = {} as any;
     this.initializePalettes();
   }
 
-  /**
-   * Initialize all color palettes
-   */
-  initializePalettes() {
+  private initializePalettes(): void {
     this.palettes = {
       default: {
         light: {
@@ -81,91 +114,61 @@ export class ColorScheme {
     };
   }
 
-  /**
-   * Set the current theme
-   * @param {string} theme - 'light' or 'dark'
-   */
-  setTheme(theme) {
+  setTheme(theme: Theme): void {
     this.theme = theme;
   }
 
-  /**
-   * Set the current palette
-   * @param {string} palette - 'default', 'energy', or 'phase'
-   */
-  setPalette(palette) {
+  setPalette(palette: PaletteName): void {
     if (this.palettes[palette]) {
       this.currentPalette = palette;
     }
   }
 
-  /**
-   * Get color for a node based on its state (default palette)
-   * @param {Object} node - Node object with state property
-   * @returns {Object} Color object with base and glow properties
-   */
-  getNodeColor(node) {
+  getNodeColor(node: Node): ColorPair {
     const palette = this.palettes[this.currentPalette][this.theme];
     
     if (this.currentPalette === 'default') {
-      return palette[node.state] || palette.symmetric;
+      return (palette[node.state] as ColorPair) || (palette.symmetric as ColorPair);
     } else if (this.currentPalette === 'energy') {
       return this.getEnergyColor(node.energy);
     } else if (this.currentPalette === 'phase') {
       return this.getPhaseColor(node.phase);
     }
     
-    return palette.symmetric;
+    return palette.symmetric as ColorPair;
   }
 
-  /**
-   * Get color based on energy level
-   * @param {number} energy - Energy value (0-1 normalized)
-   * @returns {Object} Color object with base and glow properties
-   */
-  getEnergyColor(energy) {
+  getEnergyColor(energy: number): ColorPair {
     const palette = this.palettes.energy[this.theme];
     
     if (energy < 0.25) {
-      return palette.low;
+      return palette.low as ColorPair;
     } else if (energy < 0.5) {
-      return palette.medium;
+      return palette.medium as ColorPair;
     } else if (energy < 0.75) {
-      return palette.high;
+      return palette.high as ColorPair;
     } else {
-      return palette.veryHigh;
+      return palette.veryHigh as ColorPair;
     }
   }
 
-  /**
-   * Get color based on phase
-   * @param {number} phase - Phase value in radians (0-2π)
-   * @returns {Object} Color object with base and glow properties
-   */
-  getPhaseColor(phase) {
+  getPhaseColor(phase: number): ColorPair {
     const palette = this.palettes.phase[this.theme];
     const normalizedPhase = ((phase % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
     const phaseDegrees = (normalizedPhase * 180) / Math.PI;
     
     if (phaseDegrees < 45 || phaseDegrees >= 315) {
-      return palette.phase0;
+      return palette.phase0 as ColorPair;
     } else if (phaseDegrees < 135) {
-      return palette.phase90;
+      return palette.phase90 as ColorPair;
     } else if (phaseDegrees < 225) {
-      return palette.phase180;
+      return palette.phase180 as ColorPair;
     } else {
-      return palette.phase270;
+      return palette.phase270 as ColorPair;
     }
   }
 
-  /**
-   * Interpolate between two colors
-   * @param {string} color1 - Start color (hex)
-   * @param {string} color2 - End color (hex)
-   * @param {number} factor - Interpolation factor (0-1)
-   * @returns {string} Interpolated color (hex)
-   */
-  interpolateColor(color1, color2, factor) {
+  interpolateColor(color1: string, color2: string, factor: number): string {
     const c1 = this.hexToRgb(color1);
     const c2 = this.hexToRgb(color2);
     
@@ -176,12 +179,7 @@ export class ColorScheme {
     return this.rgbToHex(r, g, b);
   }
 
-  /**
-   * Convert hex color to RGB
-   * @param {string} hex - Hex color string
-   * @returns {Object} RGB object
-   */
-  hexToRgb(hex) {
+  hexToRgb(hex: string): RGB {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? {
       r: parseInt(result[1], 16),
@@ -190,74 +188,47 @@ export class ColorScheme {
     } : { r: 0, g: 0, b: 0 };
   }
 
-  /**
-   * Convert RGB to hex color
-   * @param {number} r - Red (0-255)
-   * @param {number} g - Green (0-255)
-   * @param {number} b - Blue (0-255)
-   * @returns {string} Hex color string
-   */
-  rgbToHex(r, g, b) {
+  rgbToHex(r: number, g: number, b: number): string {
     return '#' + [r, g, b].map(x => {
       const hex = x.toString(16);
       return hex.length === 1 ? '0' + hex : hex;
     }).join('');
   }
 
-  /**
-   * Get background color
-   * @returns {string} Background color
-   */
-  getBackgroundColor() {
+  getBackgroundColor(): string {
     return this.palettes[this.currentPalette][this.theme].background;
   }
 
-  /**
-   * Get grid color
-   * @returns {string} Grid color
-   */
-  getGridColor() {
+  getGridColor(): string {
     return this.palettes[this.currentPalette][this.theme].grid;
   }
 
-  /**
-   * Get connection color
-   * @returns {string} Connection color
-   */
-  getConnectionColor() {
+  getConnectionColor(): string {
     return this.palettes[this.currentPalette][this.theme].connection;
   }
 
-  /**
-   * Get text color
-   * @returns {string} Text color
-   */
-  getTextColor() {
+  getTextColor(): string {
     return this.palettes[this.currentPalette][this.theme].text;
   }
 
-  /**
-   * Generate legend data for current palette
-   * @returns {Array} Legend entries with color and description
-   */
-  generateLegend() {
-    const legends = {
+  generateLegend(): LegendEntry[] {
+    const legends: Record<PaletteName, LegendEntry[]> = {
       default: [
-        { color: this.palettes.default[this.theme].symmetric.base, label: 'Symmetric', description: 'Nodes in symmetric state' },
-        { color: this.palettes.default[this.theme].asymmetric.base, label: 'Asymmetric', description: 'Nodes in asymmetric state' },
-        { color: this.palettes.default[this.theme].anomaly.base, label: 'Anomaly', description: 'Symmetry anomaly nodes' }
+        { color: (this.palettes.default[this.theme].symmetric as ColorPair).base, label: 'Symmetric', description: 'Nodes in symmetric state' },
+        { color: (this.palettes.default[this.theme].asymmetric as ColorPair).base, label: 'Asymmetric', description: 'Nodes in asymmetric state' },
+        { color: (this.palettes.default[this.theme].anomaly as ColorPair).base, label: 'Anomaly', description: 'Symmetry anomaly nodes' }
       ],
       energy: [
-        { color: this.palettes.energy[this.theme].low.base, label: 'Low Energy', description: 'Energy < 25%' },
-        { color: this.palettes.energy[this.theme].medium.base, label: 'Medium Energy', description: 'Energy 25-50%' },
-        { color: this.palettes.energy[this.theme].high.base, label: 'High Energy', description: 'Energy 50-75%' },
-        { color: this.palettes.energy[this.theme].veryHigh.base, label: 'Very High Energy', description: 'Energy > 75%' }
+        { color: (this.palettes.energy[this.theme].low as ColorPair).base, label: 'Low Energy', description: 'Energy < 25%' },
+        { color: (this.palettes.energy[this.theme].medium as ColorPair).base, label: 'Medium Energy', description: 'Energy 25-50%' },
+        { color: (this.palettes.energy[this.theme].high as ColorPair).base, label: 'High Energy', description: 'Energy 50-75%' },
+        { color: (this.palettes.energy[this.theme].veryHigh as ColorPair).base, label: 'Very High Energy', description: 'Energy > 75%' }
       ],
       phase: [
-        { color: this.palettes.phase[this.theme].phase0.base, label: 'Phase 0°', description: 'Phase 0-45° or 315-360°' },
-        { color: this.palettes.phase[this.theme].phase90.base, label: 'Phase 90°', description: 'Phase 45-135°' },
-        { color: this.palettes.phase[this.theme].phase180.base, label: 'Phase 180°', description: 'Phase 135-225°' },
-        { color: this.palettes.phase[this.theme].phase270.base, label: 'Phase 270°', description: 'Phase 225-315°' }
+        { color: (this.palettes.phase[this.theme].phase0 as ColorPair).base, label: 'Phase 0°', description: 'Phase 0-45° or 315-360°' },
+        { color: (this.palettes.phase[this.theme].phase90 as ColorPair).base, label: 'Phase 90°', description: 'Phase 45-135°' },
+        { color: (this.palettes.phase[this.theme].phase180 as ColorPair).base, label: 'Phase 180°', description: 'Phase 135-225°' },
+        { color: (this.palettes.phase[this.theme].phase270 as ColorPair).base, label: 'Phase 270°', description: 'Phase 225-315°' }
       ]
     };
     

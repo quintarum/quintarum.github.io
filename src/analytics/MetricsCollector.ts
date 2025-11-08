@@ -1,19 +1,112 @@
 import { Physics } from '../core/Physics.js';
+import { Simulation } from '../core/Simulation.js';
+
+ 
+type AnyRecord = any;
+
+interface CollectorOptions {
+  maxDataPoints?: number;
+  samplingInterval?: number;
+  detectEvents?: boolean;
+}
+
+interface EnergyMetrics {
+  total: number;
+  average: number;
+  max: number;
+  min: number;
+}
+
+interface SymmetryMetrics {
+  ratio: number;
+  symmetric: number;
+  asymmetric: number;
+  anomalies: number;
+}
+
+interface TimeSeriesData {
+  time: number[];
+  energy: {
+    total: number[];
+    average: number[];
+    max: number[];
+    min: number[];
+    distribution: number[];
+  };
+  symmetry: {
+    ratio: number[];
+    symmetric: number[];
+    asymmetric: number[];
+    anomalies: number[];
+  };
+  entropy: number[];
+  correlationLength: number[];
+  phaseCoherence: number[];
+  anomalyDensity: number[];
+}
+
+interface StatAccumulator {
+  count: number;
+  sum: number;
+  sumSquares: number;
+  min: number;
+  max: number;
+  values: number[];
+}
+
+interface CalculatedStatistics {
+  mean: number;
+  variance: number;
+  stdDev: number;
+  min: number;
+  max: number;
+  count: number;
+}
+
+interface DetectedEvent {
+  type: 'energySpike' | 'symmetryChange' | 'anomalyBurst' | 'entropyJump';
+  time: number;
+  severity: number;
+  data: Record<string, number>;
+}
+
+interface CollectedData {
+  time: number;
+  energy: EnergyMetrics;
+  symmetry: SymmetryMetrics;
+  entropy: number;
+  correlationLength: number;
+  phaseCoherence: number;
+  anomalyDensity: number;
+}
+
+interface TrendAnalysis {
+  trend: 'increasing' | 'decreasing' | 'stable' | 'insufficient_data';
+  slope: number;
+  confidence: number;
+}
+
+interface MetricsCallbacks {
+  onEventDetected: ((event: DetectedEvent) => void) | null;
+  onDataCollected: ((data: CollectedData) => void) | null;
+}
 
 /**
  * MetricsCollector class for real-time analytics and data collection
  * Collects, analyzes, and tracks simulation metrics over time
  */
 export class MetricsCollector {
-  /**
-   * Create a new MetricsCollector
-   * @param {Simulation} simulation - The simulation to collect metrics from
-   * @param {Object} options - Collection options
-   * @param {number} options.maxDataPoints - Maximum number of data points to keep
-   * @param {number} options.samplingInterval - Interval for collecting samples (in steps)
-   * @param {boolean} options.detectEvents - Enable automatic event detection
-   */
-  constructor(simulation, options = {}) {
+  private simulation: Simulation;
+  private options: Required<CollectorOptions>;
+  private timeSeries: TimeSeriesData;
+  private statistics: Record<string, StatAccumulator>;
+  private events: DetectedEvent[] = [];
+  private eventThresholds: Record<string, number>;
+  private lastValues: Record<string, number>;
+  private sampleCount: number = 0;
+  private callbacks: MetricsCallbacks;
+
+  constructor(simulation: Simulation, options: CollectorOptions = {}) {
     this.simulation = simulation;
     
     this.options = {
@@ -22,7 +115,6 @@ export class MetricsCollector {
       detectEvents: options.detectEvents ?? true
     };
     
-    // Time-series data structures
     this.timeSeries = {
       time: [],
       energy: {
@@ -44,7 +136,6 @@ export class MetricsCollector {
       anomalyDensity: []
     };
     
-    // Statistical accumulators
     this.statistics = {
       energy: this._createStatAccumulator(),
       symmetryRatio: this._createStatAccumulator(),
@@ -52,16 +143,13 @@ export class MetricsCollector {
       anomalyCount: this._createStatAccumulator()
     };
     
-    // Event detection
-    this.events = [];
     this.eventThresholds = {
-      energySpike: 2.0,        // Standard deviations above mean
-      symmetryChange: 0.3,     // Absolute change in ratio
-      anomalyBurst: 10,        // Number of new anomalies
-      entropyJump: 0.5         // Absolute change in entropy
+      energySpike: 2.0,
+      symmetryChange: 0.3,
+      anomalyBurst: 10,
+      entropyJump: 0.5
     };
     
-    // Last collected values for change detection
     this.lastValues = {
       energy: 0,
       symmetryRatio: 0,
@@ -69,22 +157,13 @@ export class MetricsCollector {
       entropy: 0
     };
     
-    // Collection counter
-    this.sampleCount = 0;
-    
-    // Callbacks
     this.callbacks = {
       onEventDetected: null,
       onDataCollected: null
     };
   }
 
-  /**
-   * Create a statistical accumulator
-   * @private
-   * @returns {Object} Accumulator object
-   */
-  _createStatAccumulator() {
+  private _createStatAccumulator(): StatAccumulator {
     return {
       count: 0,
       sum: 0,
@@ -95,14 +174,9 @@ export class MetricsCollector {
     };
   }
 
-  /**
-   * Collect current metrics from the simulation
-   * @returns {Object} Collected metrics
-   */
-  collect() {
+  collect(): CollectedData | null {
     this.sampleCount++;
     
-    // Only collect at specified intervals
     if (this.sampleCount % this.options.samplingInterval !== 0) {
       return null;
     }
@@ -111,29 +185,25 @@ export class MetricsCollector {
     const stats = lattice.getStatistics();
     const currentTime = this.simulation.time;
     
-    // Collect energy metrics
-    const energyMetrics = {
+    const energyMetrics: EnergyMetrics = {
       total: stats.totalEnergy,
       average: stats.avgEnergy,
       max: stats.maxEnergy,
       min: stats.minEnergy
     };
     
-    // Collect symmetry metrics
-    const symmetryMetrics = {
+    const symmetryMetrics: SymmetryMetrics = {
       ratio: stats.symmetric / stats.total,
       symmetric: stats.symmetric,
       asymmetric: stats.asymmetric,
       anomalies: stats.anomalies
     };
     
-    // Calculate advanced metrics
     const entropy = Physics.calculateEntropy(lattice);
     const correlationLength = Physics.calculateCorrelationLength(lattice);
     const phaseCoherence = Physics.calculatePhaseCoherence(lattice.nodes);
     const anomalyDensity = stats.anomalies / stats.total;
     
-    // Store in time series
     this.timeSeries.time.push(currentTime);
     this.timeSeries.energy.total.push(energyMetrics.total);
     this.timeSeries.energy.average.push(energyMetrics.average);
@@ -148,18 +218,13 @@ export class MetricsCollector {
     this.timeSeries.phaseCoherence.push(phaseCoherence);
     this.timeSeries.anomalyDensity.push(anomalyDensity);
     
-    // Limit data points
     this._limitDataPoints();
-    
-    // Update statistics
     this._updateStatistics(energyMetrics, symmetryMetrics, entropy, stats.anomalies);
     
-    // Detect significant events
     if (this.options.detectEvents) {
       this._detectEvents(energyMetrics, symmetryMetrics, entropy, stats.anomalies);
     }
     
-    // Update last values
     this.lastValues = {
       energy: energyMetrics.total,
       symmetryRatio: symmetryMetrics.ratio,
@@ -167,7 +232,7 @@ export class MetricsCollector {
       entropy: entropy
     };
     
-    const collectedData = {
+    const collectedData: CollectedData = {
       time: currentTime,
       energy: energyMetrics,
       symmetry: symmetryMetrics,
@@ -177,7 +242,6 @@ export class MetricsCollector {
       anomalyDensity
     };
     
-    // Notify callback
     if (this.callbacks.onDataCollected) {
       this.callbacks.onDataCollected(collectedData);
     }
@@ -185,11 +249,7 @@ export class MetricsCollector {
     return collectedData;
   }
 
-  /**
-   * Limit the number of data points to maxDataPoints
-   * @private
-   */
-  _limitDataPoints() {
+  private _limitDataPoints(): void {
     const maxPoints = this.options.maxDataPoints;
     
     if (this.timeSeries.time.length > maxPoints) {
@@ -211,41 +271,32 @@ export class MetricsCollector {
     }
   }
 
-  /**
-   * Update statistical accumulators
-   * @private
-   */
-  _updateStatistics(energyMetrics, symmetryMetrics, entropy, anomalyCount) {
+  private _updateStatistics(
+    energyMetrics: EnergyMetrics,
+    symmetryMetrics: SymmetryMetrics,
+    entropy: number,
+    anomalyCount: number
+  ): void {
     this._updateAccumulator(this.statistics.energy, energyMetrics.total);
     this._updateAccumulator(this.statistics.symmetryRatio, symmetryMetrics.ratio);
     this._updateAccumulator(this.statistics.entropy, entropy);
     this._updateAccumulator(this.statistics.anomalyCount, anomalyCount);
   }
 
-  /**
-   * Update a single accumulator with a new value
-   * @private
-   */
-  _updateAccumulator(accumulator, value) {
+  private _updateAccumulator(accumulator: StatAccumulator, value: number): void {
     accumulator.count++;
     accumulator.sum += value;
     accumulator.sumSquares += value * value;
     accumulator.min = Math.min(accumulator.min, value);
     accumulator.max = Math.max(accumulator.max, value);
     
-    // Keep recent values for moving statistics
     accumulator.values.push(value);
     if (accumulator.values.length > 100) {
       accumulator.values.shift();
     }
   }
 
-  /**
-   * Calculate statistics for an accumulator
-   * @param {Object} accumulator - The accumulator to calculate stats for
-   * @returns {Object} Calculated statistics
-   */
-  calculateStatistics(accumulator) {
+  calculateStatistics(accumulator: StatAccumulator): CalculatedStatistics {
     if (accumulator.count === 0) {
       return {
         mean: 0,
@@ -271,11 +322,7 @@ export class MetricsCollector {
     };
   }
 
-  /**
-   * Get all calculated statistics
-   * @returns {Object} All statistics
-   */
-  getStatistics() {
+  getStatistics(): Record<string, CalculatedStatistics> {
     return {
       energy: this.calculateStatistics(this.statistics.energy),
       symmetryRatio: this.calculateStatistics(this.statistics.symmetryRatio),
@@ -284,14 +331,14 @@ export class MetricsCollector {
     };
   }
 
-  /**
-   * Detect significant events in the simulation
-   * @private
-   */
-  _detectEvents(energyMetrics, symmetryMetrics, entropy, anomalyCount) {
+  private _detectEvents(
+    energyMetrics: EnergyMetrics,
+    symmetryMetrics: SymmetryMetrics,
+    entropy: number,
+    anomalyCount: number
+  ): void {
     const currentTime = this.simulation.time;
     
-    // Energy spike detection
     const energyStats = this.calculateStatistics(this.statistics.energy);
     if (energyStats.count > 10) {
       const energyZScore = (energyMetrics.total - energyStats.mean) / (energyStats.stdDev || 1);
@@ -309,7 +356,6 @@ export class MetricsCollector {
       }
     }
     
-    // Symmetry change detection
     const symmetryChange = Math.abs(symmetryMetrics.ratio - this.lastValues.symmetryRatio);
     if (symmetryChange > this.eventThresholds.symmetryChange) {
       this._addEvent({
@@ -324,7 +370,6 @@ export class MetricsCollector {
       });
     }
     
-    // Anomaly burst detection
     const anomalyIncrease = anomalyCount - this.lastValues.anomalyCount;
     if (anomalyIncrease > this.eventThresholds.anomalyBurst) {
       this._addEvent({
@@ -338,7 +383,6 @@ export class MetricsCollector {
       });
     }
     
-    // Entropy jump detection
     const entropyChange = Math.abs(entropy - this.lastValues.entropy);
     if (entropyChange > this.eventThresholds.entropyJump) {
       this._addEvent({
@@ -354,14 +398,9 @@ export class MetricsCollector {
     }
   }
 
-  /**
-   * Add a detected event
-   * @private
-   */
-  _addEvent(event) {
+  private _addEvent(event: DetectedEvent): void {
     this.events.push(event);
     
-    // Limit event history
     if (this.events.length > 100) {
       this.events.shift();
     }
@@ -371,30 +410,21 @@ export class MetricsCollector {
     }
   }
 
-  /**
-   * Get all detected events
-   * @param {string} type - Optional filter by event type
-   * @returns {Array<Object>} Array of events
-   */
-  getEvents(type = null) {
+  getEvents(type: DetectedEvent['type'] | null = null): DetectedEvent[] {
     if (type) {
       return this.events.filter(e => e.type === type);
     }
     return [...this.events];
   }
 
-  /**
-   * Get time series data
-   * @param {string} metric - Metric name (e.g., 'energy.total', 'symmetry.ratio')
-   * @param {number} startTime - Optional start time filter
-   * @param {number} endTime - Optional end time filter
-   * @returns {Object} Time series data with time and values arrays
-   */
-  getTimeSeries(metric, startTime = null, endTime = null) {
+  getTimeSeries(
+    metric: string,
+    startTime: number | null = null,
+    endTime: number | null = null
+  ): { time: number[]; values: number[] } {
     const parts = metric.split('.');
-    let data = this.timeSeries;
+    let data: AnyRecord = this.timeSeries;
     
-    // Navigate to the requested metric
     for (const part of parts) {
       if (data[part] !== undefined) {
         data = data[part];
@@ -403,9 +433,8 @@ export class MetricsCollector {
       }
     }
     
-    // Filter by time range if specified
     if (startTime !== null || endTime !== null) {
-      const filtered = { time: [], values: [] };
+      const filtered = { time: [] as number[], values: [] as number[] };
       
       for (let i = 0; i < this.timeSeries.time.length; i++) {
         const t = this.timeSeries.time[i];
@@ -424,16 +453,10 @@ export class MetricsCollector {
     };
   }
 
-  /**
-   * Calculate moving average for a metric
-   * @param {string} metric - Metric name
-   * @param {number} windowSize - Window size for moving average
-   * @returns {Array<number>} Moving average values
-   */
-  calculateMovingAverage(metric, windowSize = 10) {
+  calculateMovingAverage(metric: string, windowSize: number = 10): number[] {
     const series = this.getTimeSeries(metric);
     const values = series.values;
-    const movingAvg = [];
+    const movingAvg: number[] = [];
     
     for (let i = 0; i < values.length; i++) {
       const start = Math.max(0, i - windowSize + 1);
@@ -445,24 +468,16 @@ export class MetricsCollector {
     return movingAvg;
   }
 
-  /**
-   * Calculate correlation between two metrics
-   * @param {string} metric1 - First metric name
-   * @param {string} metric2 - Second metric name
-   * @returns {number} Correlation coefficient (-1 to 1)
-   */
-  calculateCorrelation(metric1, metric2) {
+  calculateCorrelation(metric1: string, metric2: string): number {
     const series1 = this.getTimeSeries(metric1).values;
     const series2 = this.getTimeSeries(metric2).values;
     
     const n = Math.min(series1.length, series2.length);
     if (n === 0) return 0;
     
-    // Calculate means
     const mean1 = series1.slice(0, n).reduce((sum, val) => sum + val, 0) / n;
     const mean2 = series2.slice(0, n).reduce((sum, val) => sum + val, 0) / n;
     
-    // Calculate correlation
     let numerator = 0;
     let sum1Sq = 0;
     let sum2Sq = 0;
@@ -479,23 +494,14 @@ export class MetricsCollector {
     return denominator === 0 ? 0 : numerator / denominator;
   }
 
-  /**
-   * Detect trends in a metric
-   * @param {string} metric - Metric name
-   * @param {number} windowSize - Window size for trend detection
-   * @returns {Object} Trend information
-   */
-  detectTrend(metric, windowSize = 50) {
+  detectTrend(metric: string, windowSize: number = 50): TrendAnalysis {
     const series = this.getTimeSeries(metric).values;
     
     if (series.length < windowSize) {
       return { trend: 'insufficient_data', slope: 0, confidence: 0 };
     }
     
-    // Use recent window
     const window = series.slice(-windowSize);
-    
-    // Calculate linear regression
     const n = window.length;
     const xMean = (n - 1) / 2;
     const yMean = window.reduce((sum, val) => sum + val, 0) / n;
@@ -512,7 +518,6 @@ export class MetricsCollector {
     
     const slope = denominator === 0 ? 0 : numerator / denominator;
     
-    // Calculate R-squared for confidence
     let ssRes = 0;
     let ssTot = 0;
     
@@ -524,8 +529,7 @@ export class MetricsCollector {
     
     const rSquared = ssTot === 0 ? 0 : 1 - (ssRes / ssTot);
     
-    // Determine trend direction
-    let trend = 'stable';
+    let trend: TrendAnalysis['trend'] = 'stable';
     if (Math.abs(slope) > 0.01) {
       trend = slope > 0 ? 'increasing' : 'decreasing';
     }
@@ -537,33 +541,25 @@ export class MetricsCollector {
     };
   }
 
-  /**
-   * Reset all collected data
-   */
-  reset() {
-    // Clear time series
+  reset(): void {
     for (const key in this.timeSeries) {
-      if (typeof this.timeSeries[key] === 'object' && !Array.isArray(this.timeSeries[key])) {
-        for (const subKey in this.timeSeries[key]) {
-          this.timeSeries[key][subKey] = [];
+      const value = this.timeSeries[key as keyof TimeSeriesData];
+      if (typeof value === 'object' && !Array.isArray(value)) {
+        for (const subKey in value) {
+          (value as any)[subKey] = [];
         }
-      } else if (Array.isArray(this.timeSeries[key])) {
-        this.timeSeries[key] = [];
+      } else if (Array.isArray(value)) {
+        (this.timeSeries as any)[key] = [];
       }
     }
     
-    // Reset statistics
     for (const key in this.statistics) {
       this.statistics[key] = this._createStatAccumulator();
     }
     
-    // Clear events
     this.events = [];
-    
-    // Reset counters
     this.sampleCount = 0;
     
-    // Reset last values
     this.lastValues = {
       energy: 0,
       symmetryRatio: 0,
@@ -572,23 +568,19 @@ export class MetricsCollector {
     };
   }
 
-  /**
-   * Register a callback for events
-   * @param {string} event - Event name ('onEventDetected', 'onDataCollected')
-   * @param {Function} callback - Callback function
-   */
-  on(event, callback) {
-    if (Object.prototype.hasOwnProperty.call(this.callbacks, event)) {
-      this.callbacks[event] = callback;
+  on(event: keyof MetricsCallbacks, callback: MetricsCallbacks[keyof MetricsCallbacks]): this {
+    if (event in this.callbacks) {
+      this.callbacks[event] = callback as any;
     }
     return this;
   }
 
-  /**
-   * Export all collected data
-   * @returns {Object} Exportable data
-   */
-  export() {
+  export(): {
+    timeSeries: TimeSeriesData;
+    statistics: Record<string, CalculatedStatistics>;
+    events: DetectedEvent[];
+    options: Required<CollectorOptions>;
+  } {
     return {
       timeSeries: this.timeSeries,
       statistics: this.getStatistics(),

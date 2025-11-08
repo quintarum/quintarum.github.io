@@ -1,3 +1,38 @@
+import { Node, NodeState, PhysicsParams } from './Node.js';
+import { Lattice } from './Lattice.js';
+
+interface ReversibilityMetrics {
+  energyConservation: number;
+  stateReversibility: number;
+  energyDifference: number;
+  violationCount: number;
+}
+
+interface StateViolation {
+  nodeIndex: number;
+  from: NodeState;
+  to: NodeState;
+}
+
+interface SimulationState {
+  totalEnergy: number;
+  nodes?: Array<{ state: NodeState }>;
+}
+
+interface ReversibilityAnalysis {
+  forward: SimulationState;
+  backward: SimulationState;
+  isReversible: boolean;
+  reversibilityScore: number;
+  violations: StateViolation[];
+  metrics?: ReversibilityMetrics;
+}
+
+interface ExternalField {
+  strength: number;
+  type: 'energy' | 'phase' | 'symmetry';
+}
+
 /**
  * Physics class implementing TDS (Theory of Dynamic Symmetry) calculations
  * Handles symmetry transitions, energy gradients, anomaly propagation, and reversible dynamics
@@ -5,18 +40,11 @@
 export class Physics {
   /**
    * Calculate symmetry transition probability for a node
-   * @param {Node} node - The node to calculate transition for
-   * @param {Array<Node>} neighbors - Array of neighboring nodes
-   * @param {Object} params - Physics parameters
-   * @param {number} params.symmetryStrength - Strength of symmetry influence (0-1)
-   * @param {number} params.anomalyProbability - Probability of anomaly formation (0-1)
-   * @returns {number} Transition probability
    */
-  static calculateSymmetryTransition(node, neighbors, params) {
+  static calculateSymmetryTransition(node: Node, neighbors: Node[], params: PhysicsParams): number {
     const localSymmetry = this.calculateLocalSymmetry(neighbors);
     const energyGradient = this.calculateEnergyGradient(node, neighbors);
     
-    // TDS core law: transition probability based on local symmetry and energy gradient
     const transitionProbability = 
       params.symmetryStrength * localSymmetry - 
       params.anomalyProbability * energyGradient;
@@ -26,18 +54,14 @@ export class Physics {
 
   /**
    * Calculate local symmetry based on neighbor states
-   * @param {Array<Node>} neighbors - Array of neighboring nodes
-   * @returns {number} Local symmetry value (0-1)
    */
-  static calculateLocalSymmetry(neighbors) {
+  static calculateLocalSymmetry(neighbors: Node[]): number {
     if (neighbors.length === 0) return 1.0;
     
     const symmetricCount = neighbors.filter(n => n.state === 'symmetric').length;
     const asymmetricCount = neighbors.filter(n => n.state === 'asymmetric').length;
     const anomalyCount = neighbors.filter(n => n.state === 'anomaly').length;
     
-    // Weighted symmetry calculation
-    // Symmetric nodes contribute positively, anomalies negatively
     const symmetryScore = 
       (symmetricCount * 1.0 + asymmetricCount * 0.5 + anomalyCount * 0.0) / neighbors.length;
     
@@ -46,36 +70,24 @@ export class Physics {
 
   /**
    * Calculate energy gradient between a node and its neighbors
-   * @param {Node} node - The node to calculate gradient for
-   * @param {Array<Node>} neighbors - Array of neighboring nodes
-   * @returns {number} Energy gradient value
    */
-  static calculateEnergyGradient(node, neighbors) {
+  static calculateEnergyGradient(node: Node, neighbors: Node[]): number {
     if (neighbors.length === 0) return 0;
     
     const avgEnergy = neighbors.reduce((sum, n) => sum + n.energy, 0) / neighbors.length;
     const gradient = Math.abs(node.energy - avgEnergy);
     
-    // Normalize gradient to [0, 1] range
     return Math.min(1.0, gradient / 10.0);
   }
 
   /**
    * Propagate anomaly from a source node with wave effects
-   * @param {Node} anomalyNode - The source anomaly node
-   * @param {Lattice} lattice - The lattice containing the nodes
-   * @param {Object} params - Physics parameters
-   * @param {number} params.interactionRange - Range of anomaly influence
-   * @param {number} params.anomalyProbability - Base probability of anomaly spread
-   * @param {number} params.waveSpeed - Speed of anomaly wave propagation
-   * @returns {Array<Node>} Array of affected nodes
    */
-  static propagateAnomaly(anomalyNode, lattice, params) {
-    const affectedNodes = [];
+  static propagateAnomaly(anomalyNode: Node, lattice: Lattice, params: PhysicsParams): Node[] {
+    const affectedNodes: Node[] = [];
     const { x, y, z } = anomalyNode.position;
     const range = Math.ceil(params.interactionRange || 3);
     
-    // Get nodes in the interaction range
     const region = lattice.getRegion(
       x - range, y - range,
       x + range, y + range,
@@ -83,34 +95,22 @@ export class Physics {
     );
     
     for (const node of region) {
-      // Skip the anomaly node itself
       if (node === anomalyNode) continue;
       
-      // Calculate distance from anomaly
       const distance = this.calculateDistance(anomalyNode, node);
-      
-      // Wave effect: influence decreases with distance
-      const waveAmplitude = Math.exp(-distance / params.interactionRange);
-      
-      // Phase-based wave propagation
+      const waveAmplitude = Math.exp(-distance / (params.interactionRange || 3));
       const wavePhase = distance * (params.waveSpeed || 0.5);
       const waveEffect = waveAmplitude * (0.5 + 0.5 * Math.cos(wavePhase));
-      
-      // Probability of affecting this node
       const influenceProbability = params.anomalyProbability * waveEffect;
       
       if (Math.random() < influenceProbability) {
-        // Determine effect based on distance
-        if (distance < params.interactionRange * 0.3) {
-          // Close nodes become anomalies
+        if (distance < (params.interactionRange || 3) * 0.3) {
           node.setState('anomaly');
-        } else if (distance < params.interactionRange * 0.7) {
-          // Medium distance nodes become asymmetric
+        } else if (distance < (params.interactionRange || 3) * 0.7) {
           if (node.state === 'symmetric') {
             node.setState('asymmetric');
           }
         } else {
-          // Far nodes get energy boost
           node.energy += waveEffect * 2.0;
         }
         
@@ -123,11 +123,8 @@ export class Physics {
 
   /**
    * Calculate Euclidean distance between two nodes
-   * @param {Node} node1 - First node
-   * @param {Node} node2 - Second node
-   * @returns {number} Distance between nodes
    */
-  static calculateDistance(node1, node2) {
+  static calculateDistance(node1: Node, node2: Node): number {
     const dx = node1.position.x - node2.position.x;
     const dy = node1.position.y - node2.position.y;
     const dz = node1.position.z - node2.position.z;
@@ -137,12 +134,12 @@ export class Physics {
 
   /**
    * Calculate reversible dynamics for time reversibility
-   * @param {Object} currentState - Current simulation state
-   * @param {Object} previousState - Previous simulation state
-   * @returns {Object} Reversibility analysis
    */
-  static calculateReversibleDynamics(currentState, previousState) {
-    const reversibility = {
+  static calculateReversibleDynamics(
+    currentState: SimulationState, 
+    previousState: SimulationState
+  ): ReversibilityAnalysis {
+    const reversibility: ReversibilityAnalysis = {
       forward: currentState,
       backward: previousState,
       isReversible: true,
@@ -150,18 +147,15 @@ export class Physics {
       violations: []
     };
     
-    // Check if we have both states
     if (!currentState || !previousState) {
       reversibility.isReversible = false;
       reversibility.reversibilityScore = 0;
       return reversibility;
     }
     
-    // Compare energy conservation
     const energyDiff = Math.abs(currentState.totalEnergy - previousState.totalEnergy);
     const energyConservation = 1.0 - Math.min(1.0, energyDiff / currentState.totalEnergy);
     
-    // Compare state transitions
     let stateMatches = 0;
     let totalNodes = 0;
     
@@ -172,7 +166,6 @@ export class Physics {
         const curr = currentState.nodes[i];
         const prev = previousState.nodes[i];
         
-        // Check if state transition is physically reversible
         if (this._isReversibleTransition(prev.state, curr.state)) {
           stateMatches++;
         } else {
@@ -187,11 +180,9 @@ export class Physics {
     
     const stateReversibility = totalNodes > 0 ? stateMatches / totalNodes : 1.0;
     
-    // Calculate overall reversibility score
     reversibility.reversibilityScore = (energyConservation + stateReversibility) / 2;
     reversibility.isReversible = reversibility.reversibilityScore > 0.95;
     
-    // Add detailed metrics
     reversibility.metrics = {
       energyConservation,
       stateReversibility,
@@ -204,15 +195,9 @@ export class Physics {
 
   /**
    * Check if a state transition is reversible
-   * @private
-   * @param {string} fromState - Initial state
-   * @param {string} toState - Final state
-   * @returns {boolean} True if transition is reversible
    */
-  static _isReversibleTransition(fromState, toState) {
-    // All transitions in TDS should be reversible
-    // Symmetric <-> Asymmetric <-> Anomaly
-    const validTransitions = {
+  private static _isReversibleTransition(fromState: NodeState, toState: NodeState): boolean {
+    const validTransitions: Record<NodeState, NodeState[]> = {
       'symmetric': ['symmetric', 'asymmetric'],
       'asymmetric': ['symmetric', 'asymmetric', 'anomaly'],
       'anomaly': ['asymmetric', 'anomaly']
@@ -223,13 +208,10 @@ export class Physics {
 
   /**
    * Calculate phase coherence across a region
-   * @param {Array<Node>} nodes - Array of nodes to analyze
-   * @returns {number} Phase coherence value (0-1)
    */
-  static calculatePhaseCoherence(nodes) {
+  static calculatePhaseCoherence(nodes: Node[]): number {
     if (nodes.length === 0) return 0;
     
-    // Calculate average phase vector
     let sumCos = 0;
     let sumSin = 0;
     
@@ -241,7 +223,6 @@ export class Physics {
     const avgCos = sumCos / nodes.length;
     const avgSin = sumSin / nodes.length;
     
-    // Coherence is the magnitude of the average phase vector
     const coherence = Math.sqrt(avgCos * avgCos + avgSin * avgSin);
     
     return coherence;
@@ -249,21 +230,17 @@ export class Physics {
 
   /**
    * Calculate entropy of the lattice
-   * @param {Lattice} lattice - The lattice to analyze
-   * @returns {number} Entropy value
    */
-  static calculateEntropy(lattice) {
+  static calculateEntropy(lattice: Lattice): number {
     const stats = lattice.getStatistics();
     const total = stats.total;
     
     if (total === 0) return 0;
     
-    // Calculate probabilities for each state
     const pSymmetric = stats.symmetric / total;
     const pAsymmetric = stats.asymmetric / total;
     const pAnomaly = stats.anomalies / total;
     
-    // Shannon entropy
     let entropy = 0;
     
     if (pSymmetric > 0) {
@@ -281,19 +258,15 @@ export class Physics {
 
   /**
    * Calculate correlation length in the lattice
-   * @param {Lattice} lattice - The lattice to analyze
-   * @returns {number} Correlation length
    */
-  static calculateCorrelationLength(lattice) {
-    // Sample nodes for correlation calculation
+  static calculateCorrelationLength(lattice: Lattice): number {
     const sampleSize = Math.min(100, lattice.getNodeCount());
-    const correlations = [];
+    const correlations: number[][] = [];
     
     for (let i = 0; i < sampleSize; i++) {
       const randomIndex = Math.floor(Math.random() * lattice.nodes.length);
       const node = lattice.nodes[randomIndex];
       
-      // Calculate correlation with neighbors at different distances
       for (let distance = 1; distance <= 5; distance++) {
         const neighbors = lattice.getNeighbors(node, distance);
         if (neighbors.length > 0) {
@@ -308,7 +281,6 @@ export class Physics {
       }
     }
     
-    // Find distance where correlation drops below threshold
     const threshold = 0.5;
     for (let d = 1; d < correlations.length; d++) {
       if (correlations[d] && correlations[d].length > 0) {
@@ -324,12 +296,8 @@ export class Physics {
 
   /**
    * Apply external field to a region
-   * @param {Array<Node>} nodes - Nodes to apply field to
-   * @param {Object} field - Field parameters
-   * @param {number} field.strength - Field strength
-   * @param {string} field.type - Field type ('energy', 'phase', 'symmetry')
    */
-  static applyExternalField(nodes, field) {
+  static applyExternalField(nodes: Node[], field: ExternalField): void {
     for (const node of nodes) {
       switch (field.type) {
         case 'energy':

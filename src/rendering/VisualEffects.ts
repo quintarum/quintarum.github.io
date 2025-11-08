@@ -1,26 +1,69 @@
+interface Ripple {
+  x: number;
+  y: number;
+  radius: number;
+  maxRadius: number;
+  color: string;
+  alpha: number;
+  speed: number;
+  createdAt: number;
+}
+
+interface Halo {
+  x: number;
+  y: number;
+  color: string;
+  alpha: number;
+  radius: number;
+  maxRadius: number;
+  duration: number;
+  createdAt: number;
+}
+
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  color: string;
+  alpha: number;
+  size: number;
+  lifetime: number;
+  createdAt: number;
+}
+
+interface FlowLine {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  color: string;
+  alpha: number;
+  progress: number;
+  duration: number;
+  createdAt: number;
+}
+
+interface RGB {
+  r: number;
+  g: number;
+  b: number;
+}
+
 /**
  * VisualEffects class - Manages visual effects for the simulation
  * Provides ripples, halos, particle trails, and flow lines
  */
 export class VisualEffects {
-  constructor() {
-    this.ripples = [];
-    this.halos = [];
-    this.particleTrails = [];
-    this.flowLines = [];
-    this.maxRipples = 50;
-    this.maxParticles = 1000;
-    this.maxFlowLines = 100;
-  }
+  private ripples: Ripple[] = [];
+  private halos: Halo[] = [];
+  private particleTrails: Particle[] = [];
+  private flowLines: FlowLine[] = [];
+  private readonly maxRipples: number = 50;
+  private readonly maxParticles: number = 1000;
+  private readonly maxFlowLines: number = 100;
 
-  /**
-   * Add a ripple effect at a position
-   * @param {number} x - X coordinate
-   * @param {number} y - Y coordinate
-   * @param {string} color - Ripple color
-   * @param {number} maxRadius - Maximum ripple radius
-   */
-  addRipple(x, y, color = '#E74C3C', maxRadius = 100) {
+  addRipple(x: number, y: number, color: string = '#E74C3C', maxRadius: number = 100): void {
     if (this.ripples.length >= this.maxRipples) {
       this.ripples.shift();
     }
@@ -37,14 +80,7 @@ export class VisualEffects {
     });
   }
 
-  /**
-   * Add a halo effect around a node
-   * @param {number} x - X coordinate
-   * @param {number} y - Y coordinate
-   * @param {string} color - Halo color
-   * @param {number} duration - Duration in milliseconds
-   */
-  addHalo(x, y, color = '#F39C12', duration = 1000) {
+  addHalo(x: number, y: number, color: string = '#F39C12', duration: number = 1000): void {
     this.halos.push({
       x,
       y,
@@ -57,16 +93,14 @@ export class VisualEffects {
     });
   }
 
-  /**
-   * Add a particle to a trail
-   * @param {number} x - X coordinate
-   * @param {number} y - Y coordinate
-   * @param {number} vx - X velocity
-   * @param {number} vy - Y velocity
-   * @param {string} color - Particle color
-   * @param {number} lifetime - Particle lifetime in milliseconds
-   */
-  addParticle(x, y, vx, vy, color = '#4A90E2', lifetime = 2000) {
+  addParticle(
+    x: number,
+    y: number,
+    vx: number,
+    vy: number,
+    color: string = '#4A90E2',
+    lifetime: number = 2000
+  ): void {
     if (this.particleTrails.length >= this.maxParticles) {
       this.particleTrails.shift();
     }
@@ -84,16 +118,14 @@ export class VisualEffects {
     });
   }
 
-  /**
-   * Add a flow line between two points
-   * @param {number} x1 - Start X coordinate
-   * @param {number} y1 - Start Y coordinate
-   * @param {number} x2 - End X coordinate
-   * @param {number} y2 - End Y coordinate
-   * @param {string} color - Flow line color
-   * @param {number} duration - Duration in milliseconds
-   */
-  addFlowLine(x1, y1, x2, y2, color = '#ADB5BD', duration = 1000) {
+  addFlowLine(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    color: string = '#ADB5BD',
+    duration: number = 1000
+  ): void {
     if (this.flowLines.length >= this.maxFlowLines) {
       this.flowLines.shift();
     }
@@ -111,21 +143,15 @@ export class VisualEffects {
     });
   }
 
-  /**
-   * Update all effects
-   * @param {number} deltaTime - Time since last update in milliseconds
-   */
-  update(deltaTime) {
+  update(deltaTime: number): void {
     const now = Date.now();
     
-    // Update ripples
     this.ripples = this.ripples.filter(ripple => {
       ripple.radius += ripple.speed * deltaTime / 16;
       ripple.alpha = 1.0 - (ripple.radius / ripple.maxRadius);
       return ripple.radius < ripple.maxRadius;
     });
     
-    // Update halos
     this.halos = this.halos.filter(halo => {
       const elapsed = now - halo.createdAt;
       const progress = elapsed / halo.duration;
@@ -134,7 +160,6 @@ export class VisualEffects {
       return elapsed < halo.duration;
     });
     
-    // Update particles
     this.particleTrails = this.particleTrails.filter(particle => {
       particle.x += particle.vx * deltaTime / 16;
       particle.y += particle.vy * deltaTime / 16;
@@ -144,7 +169,6 @@ export class VisualEffects {
       return elapsed < particle.lifetime;
     });
     
-    // Update flow lines
     this.flowLines = this.flowLines.filter(line => {
       const elapsed = now - line.createdAt;
       line.progress = elapsed / line.duration;
@@ -153,11 +177,7 @@ export class VisualEffects {
     });
   }
 
-  /**
-   * Render all ripple effects
-   * @param {CanvasRenderingContext2D} ctx - Canvas context
-   */
-  renderRipples(ctx) {
+  renderRipples(ctx: CanvasRenderingContext2D): void {
     this.ripples.forEach(ripple => {
       ctx.save();
       ctx.strokeStyle = ripple.color;
@@ -167,7 +187,6 @@ export class VisualEffects {
       ctx.arc(ripple.x, ripple.y, ripple.radius, 0, Math.PI * 2);
       ctx.stroke();
       
-      // Inner ripple
       ctx.globalAlpha = ripple.alpha * 0.4;
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -177,15 +196,10 @@ export class VisualEffects {
     });
   }
 
-  /**
-   * Render all halo effects
-   * @param {CanvasRenderingContext2D} ctx - Canvas context
-   */
-  renderHalos(ctx) {
+  renderHalos(ctx: CanvasRenderingContext2D): void {
     this.halos.forEach(halo => {
       ctx.save();
       
-      // Outer glow
       const gradient = ctx.createRadialGradient(
         halo.x, halo.y, 0,
         halo.x, halo.y, halo.radius
@@ -203,11 +217,7 @@ export class VisualEffects {
     });
   }
 
-  /**
-   * Render all particle trails
-   * @param {CanvasRenderingContext2D} ctx - Canvas context
-   */
-  renderParticleTrails(ctx) {
+  renderParticleTrails(ctx: CanvasRenderingContext2D): void {
     this.particleTrails.forEach(particle => {
       ctx.save();
       ctx.fillStyle = particle.color;
@@ -219,11 +229,7 @@ export class VisualEffects {
     });
   }
 
-  /**
-   * Render all flow lines
-   * @param {CanvasRenderingContext2D} ctx - Canvas context
-   */
-  renderFlowLines(ctx) {
+  renderFlowLines(ctx: CanvasRenderingContext2D): void {
     this.flowLines.forEach(line => {
       ctx.save();
       ctx.strokeStyle = line.color;
@@ -231,7 +237,6 @@ export class VisualEffects {
       ctx.lineWidth = 2;
       ctx.lineCap = 'round';
       
-      // Draw animated flow line
       const dx = line.x2 - line.x1;
       const dy = line.y2 - line.y1;
       const currentX = line.x1 + dx * line.progress;
@@ -242,7 +247,6 @@ export class VisualEffects {
       ctx.lineTo(currentX, currentY);
       ctx.stroke();
       
-      // Draw arrow head at current position
       const angle = Math.atan2(dy, dx);
       const arrowSize = 8;
       ctx.beginPath();
@@ -262,35 +266,21 @@ export class VisualEffects {
     });
   }
 
-  /**
-   * Render all effects
-   * @param {CanvasRenderingContext2D} ctx - Canvas context
-   */
-  render(ctx) {
+  render(ctx: CanvasRenderingContext2D): void {
     this.renderFlowLines(ctx);
     this.renderRipples(ctx);
     this.renderParticleTrails(ctx);
     this.renderHalos(ctx);
   }
 
-  /**
-   * Clear all effects
-   */
-  clear() {
+  clear(): void {
     this.ripples = [];
     this.halos = [];
     this.particleTrails = [];
     this.flowLines = [];
   }
 
-  /**
-   * Get smooth color transition
-   * @param {string} fromColor - Start color (hex)
-   * @param {string} toColor - End color (hex)
-   * @param {number} progress - Transition progress (0-1)
-   * @returns {string} Interpolated color
-   */
-  getColorTransition(fromColor, toColor, progress) {
+  getColorTransition(fromColor: string, toColor: string, progress: number): string {
     const from = this.hexToRgb(fromColor);
     const to = this.hexToRgb(toColor);
     
@@ -301,12 +291,7 @@ export class VisualEffects {
     return `rgb(${r}, ${g}, ${b})`;
   }
 
-  /**
-   * Convert hex to RGB
-   * @param {string} hex - Hex color
-   * @returns {Object} RGB object
-   */
-  hexToRgb(hex) {
+  private hexToRgb(hex: string): RGB {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? {
       r: parseInt(result[1], 16),

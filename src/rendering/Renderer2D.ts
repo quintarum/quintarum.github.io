@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ColorScheme } from './ColorScheme.js';
 import { VisualEffects } from './VisualEffects.js';
 

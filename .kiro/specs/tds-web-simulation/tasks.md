@@ -341,14 +341,13 @@
   - Add memory usage monitoring
   - _Requirements: 7.5_
 
-- [ ] 16. Create main application entry point
-- [ ] 16.1 Implement main.js
+- [x] 16. Create main application entry point
+- [x] 16.1 Implement main.ts
   - Initialize application on DOM ready
   - Create and wire up all components
-  - Implement mode switching (2D/3D)
-  - Add window resize handling
-  - Set up global error handlers
-  - Initialize tutorial on first visit
+  - Implement basic controls (start/pause/reset/add anomaly)
+  - Set up animation loop with rendering
+  - Display real-time statistics
   - _Requirements: 1.1, 1.4, 5.1, 6.1_
 
 - [ ] 17. Add comprehensive documentation

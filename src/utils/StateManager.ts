@@ -1,17 +1,95 @@
+interface StateManagerOptions {
+  maxHistoryDepth?: number;
+  enableCompression?: boolean;
+  compressionThreshold?: number;
+  storageKey?: string;
+}
+
+interface StateMetadata {
+  timestamp: number;
+  [key: string]: unknown;
+}
+
+interface StateEntry<T = any> {
+  state: T;
+  metadata: StateMetadata;
+  compressed: boolean;
+  age: number;
+}
+
+interface Snapshot<T = any> {
+  id: number;
+  name: string;
+  description: string;
+  state: T;
+  metadata: {
+    timestamp: number;
+    historyIndex: number;
+  };
+}
+
+interface ComparisonResult {
+  identical: boolean;
+  differences: Array<{
+    type: string;
+    [key: string]: any;
+  }>;
+  statistics: StatisticsComparison | Record<string, never>;
+  timeDifference?: number;
+}
+
+interface NodeComparison {
+  totalNodes: number;
+  differentCount: number;
+  differencePercentage: number;
+  stateDifferences: Record<string, number>;
+}
+
+interface StatisticsComparison {
+  energyDifference: number;
+  symmetricDifference: number;
+  asymmetricDifference: number;
+  anomalyDifference: number;
+}
+
+interface HistoryInfo {
+  length: number;
+  currentIndex: number;
+  canGoBack: boolean;
+  canGoForward: boolean;
+  memoryUsage: number;
+}
+
+interface StateManagerStatistics {
+  totalStates: number;
+  compressedStates: number;
+  uncompressedStates: number;
+  snapshotCount: number;
+  currentIndex: number;
+  memoryUsage: number;
+  compressionRatio: number;
+}
+
+interface StateManagerCallbacks<T = any> {
+  onStateSaved: ((data: { index: number; state: StateEntry<T> }) => void) | null;
+  onStateLoaded: ((data: { index: number; state: T; metadata: StateMetadata }) => void) | null;
+  onSnapshotCreated: ((snapshot: Snapshot<T>) => void) | null;
+  onHistoryChanged: ((data: { historyLength: number; currentIndex: number }) => void) | null;
+}
+
 /**
  * StateManager class for enhanced state persistence and management
  * Handles saving, loading, compression, and snapshot management
  */
-export class StateManager {
-  /**
-   * Create a new StateManager
-   * @param {Object} options - Configuration options
-   * @param {number} options.maxHistoryDepth - Maximum number of states to keep
-   * @param {boolean} options.enableCompression - Enable state compression
-   * @param {number} options.compressionThreshold - Minimum age (in states) before compression
-   * @param {string} options.storageKey - Key for localStorage
-   */
-  constructor(options = {}) {
+export class StateManager<T = any> {
+  private options: Required<StateManagerOptions>;
+  private history: StateEntry<T>[] = [];
+  private currentIndex: number = -1;
+  private snapshots: Map<number, Snapshot<T>> = new Map();
+  private nextSnapshotId: number = 1;
+  private callbacks: StateManagerCallbacks<T>;
+
+  constructor(options: StateManagerOptions = {}) {
     this.options = {
       maxHistoryDepth: options.maxHistoryDepth ?? 1000,
       enableCompression: options.enableCompression ?? true,
@@ -19,18 +97,6 @@ export class StateManager {
       storageKey: options.storageKey ?? 'tds_simulation_state'
     };
     
-    // State history
-    this.history = [];
-    this.currentIndex = -1;
-    
-    // Snapshots for comparison
-    this.snapshots = new Map();
-    this.nextSnapshotId = 1;
-    
-    // Compression cache
-    this.compressionCache = new Map();
-    
-    // Callbacks
     this.callbacks = {
       onStateSaved: null,
       onStateLoaded: null,
@@ -39,14 +105,8 @@ export class StateManager {
     };
   }
 
-  /**
-   * Save a simulation state
-   * @param {Object} state - State object to save
-   * @param {Object} metadata - Optional metadata
-   * @returns {number} Index of saved state
-   */
-  saveState(state, metadata = {}) {
-    const stateEntry = {
+  saveState(state: T, metadata: Partial<StateMetadata> = {}): number {
+    const stateEntry: StateEntry<T> = {
       state: this._cloneState(state),
       metadata: {
         timestamp: Date.now(),
@@ -56,27 +116,21 @@ export class StateManager {
       age: 0
     };
     
-    // If we're not at the end of history, truncate future states
     if (this.currentIndex < this.history.length - 1) {
       this.history = this.history.slice(0, this.currentIndex + 1);
     }
     
-    // Add new state
     this.history.push(stateEntry);
     this.currentIndex = this.history.length - 1;
     
-    // Update ages
     this._updateAges();
     
-    // Apply compression to old states
     if (this.options.enableCompression) {
       this._compressOldStates();
     }
     
-    // Limit history depth
     this._limitHistoryDepth();
     
-    // Notify callback
     if (this.callbacks.onStateSaved) {
       this.callbacks.onStateSaved({
         index: this.currentIndex,
@@ -94,12 +148,7 @@ export class StateManager {
     return this.currentIndex;
   }
 
-  /**
-   * Load a state by index
-   * @param {number} index - Index of state to load
-   * @returns {Object|null} Loaded state or null if invalid index
-   */
-  loadState(index) {
+  loadState(index: number): T | null {
     if (index < 0 || index >= this.history.length) {
       return null;
     }
@@ -107,12 +156,10 @@ export class StateManager {
     const stateEntry = this.history[index];
     this.currentIndex = index;
     
-    // Decompress if needed
     const state = stateEntry.compressed 
       ? this._decompressState(stateEntry.state)
       : this._cloneState(stateEntry.state);
     
-    // Notify callback
     if (this.callbacks.onStateLoaded) {
       this.callbacks.onStateLoaded({
         index,
@@ -131,11 +178,7 @@ export class StateManager {
     return state;
   }
 
-  /**
-   * Get the current state
-   * @returns {Object|null} Current state or null if no history
-   */
-  getCurrentState() {
+  getCurrentState(): T | null {
     if (this.currentIndex < 0 || this.currentIndex >= this.history.length) {
       return null;
     }
@@ -143,42 +186,28 @@ export class StateManager {
     return this.loadState(this.currentIndex);
   }
 
-  /**
-   * Move to the next state in history
-   * @returns {Object|null} Next state or null if at end
-   */
-  nextState() {
+  nextState(): T | null {
     if (this.currentIndex < this.history.length - 1) {
       return this.loadState(this.currentIndex + 1);
     }
     return null;
   }
 
-  /**
-   * Move to the previous state in history
-   * @returns {Object|null} Previous state or null if at beginning
-   */
-  previousState() {
+  previousState(): T | null {
     if (this.currentIndex > 0) {
       return this.loadState(this.currentIndex - 1);
     }
     return null;
   }
 
-  /**
-   * Create a snapshot of the current state for comparison
-   * @param {string} name - Name for the snapshot
-   * @param {string} description - Optional description
-   * @returns {Object} Created snapshot
-   */
-  createSnapshot(name, description = '') {
+  createSnapshot(name: string, description: string = ''): Snapshot<T> {
     const currentState = this.getCurrentState();
     
     if (!currentState) {
       throw new Error('No current state to snapshot');
     }
     
-    const snapshot = {
+    const snapshot: Snapshot<T> = {
       id: this.nextSnapshotId++,
       name,
       description,
@@ -191,7 +220,6 @@ export class StateManager {
     
     this.snapshots.set(snapshot.id, snapshot);
     
-    // Notify callback
     if (this.callbacks.onSnapshotCreated) {
       this.callbacks.onSnapshotCreated(snapshot);
     }
@@ -199,21 +227,12 @@ export class StateManager {
     return snapshot;
   }
 
-  /**
-   * Get a snapshot by ID
-   * @param {number} snapshotId - ID of snapshot to retrieve
-   * @returns {Object|null} Snapshot or null if not found
-   */
-  getSnapshot(snapshotId) {
+  getSnapshot(snapshotId: number): Snapshot<T> | null {
     const snapshot = this.snapshots.get(snapshotId);
     return snapshot ? { ...snapshot, state: this._cloneState(snapshot.state) } : null;
   }
 
-  /**
-   * Get all snapshots
-   * @returns {Array<Object>} Array of snapshots (without full state data)
-   */
-  getAllSnapshots() {
+  getAllSnapshots(): Array<Omit<Snapshot<T>, 'state'>> {
     return Array.from(this.snapshots.values()).map(snapshot => ({
       id: snapshot.id,
       name: snapshot.name,
@@ -222,29 +241,17 @@ export class StateManager {
     }));
   }
 
-  /**
-   * Delete a snapshot
-   * @param {number} snapshotId - ID of snapshot to delete
-   * @returns {boolean} True if deleted, false if not found
-   */
-  deleteSnapshot(snapshotId) {
+  deleteSnapshot(snapshotId: number): boolean {
     return this.snapshots.delete(snapshotId);
   }
 
-  /**
-   * Compare two states
-   * @param {Object} state1 - First state
-   * @param {Object} state2 - Second state
-   * @returns {Object} Comparison results
-   */
-  compareStates(state1, state2) {
-    const comparison = {
+  compareStates(state1: any, state2: any): ComparisonResult {
+    const comparison: ComparisonResult = {
       identical: false,
       differences: [],
-      statistics: {}
+      statistics: {} as StatisticsComparison
     };
     
-    // Compare lattice dimensions
     if (state1.lattice && state2.lattice) {
       if (state1.lattice.width !== state2.lattice.width ||
           state1.lattice.height !== state2.lattice.height ||
@@ -264,7 +271,6 @@ export class StateManager {
         });
       }
       
-      // Compare node states
       if (state1.lattice.nodes && state2.lattice.nodes) {
         const nodeDiffs = this._compareNodes(state1.lattice.nodes, state2.lattice.nodes);
         if (nodeDiffs.differentCount > 0) {
@@ -276,12 +282,10 @@ export class StateManager {
       }
     }
     
-    // Compare statistics
     if (state1.statistics && state2.statistics) {
       comparison.statistics = this._compareStatistics(state1.statistics, state2.statistics);
     }
     
-    // Compare time
     if (state1.time !== undefined && state2.time !== undefined) {
       comparison.timeDifference = state2.time - state1.time;
     }
@@ -291,14 +295,10 @@ export class StateManager {
     return comparison;
   }
 
-  /**
-   * Compare nodes between two states
-   * @private
-   */
-  _compareNodes(nodes1, nodes2) {
+  private _compareNodes(nodes1: any[], nodes2: any[]): NodeComparison {
     const minLength = Math.min(nodes1.length, nodes2.length);
     let differentCount = 0;
-    const stateDifferences = {
+    const stateDifferences: Record<string, number> = {
       symmetric: 0,
       asymmetric: 0,
       anomaly: 0
@@ -319,11 +319,7 @@ export class StateManager {
     };
   }
 
-  /**
-   * Compare statistics between two states
-   * @private
-   */
-  _compareStatistics(stats1, stats2) {
+  private _compareStatistics(stats1: any, stats2: any): StatisticsComparison {
     return {
       energyDifference: (stats2.totalEnergy || 0) - (stats1.totalEnergy || 0),
       symmetricDifference: (stats2.symmetric || 0) - (stats1.symmetric || 0),
@@ -332,15 +328,7 @@ export class StateManager {
     };
   }
 
-  /**
-   * Compress a state using delta encoding and RLE
-   * @private
-   */
-  _compressState(state) {
-    // Simple compression: store only changed values from previous state
-    // In a real implementation, you might use more sophisticated compression
-    
-    // For now, we'll use JSON stringification with a marker
+  private _compressState(state: T): any {
     const compressed = {
       _compressed: true,
       data: JSON.stringify(state)
@@ -349,52 +337,34 @@ export class StateManager {
     return compressed;
   }
 
-  /**
-   * Decompress a state
-   * @private
-   */
-  _decompressState(compressedState) {
+  private _decompressState(compressedState: any): T {
     if (compressedState._compressed) {
       return JSON.parse(compressedState.data);
     }
     return compressedState;
   }
 
-  /**
-   * Compress old states that exceed the threshold
-   * @private
-   */
-  _compressOldStates() {
+  private _compressOldStates(): void {
     for (let i = 0; i < this.history.length; i++) {
       const entry = this.history[i];
       
-      // Skip if already compressed or too recent
       if (entry.compressed || entry.age < this.options.compressionThreshold) {
         continue;
       }
       
-      // Compress the state
       entry.state = this._compressState(entry.state);
       entry.compressed = true;
     }
   }
 
-  /**
-   * Update ages of all states
-   * @private
-   */
-  _updateAges() {
+  private _updateAges(): void {
     const currentTime = this.history.length - 1;
     for (let i = 0; i < this.history.length; i++) {
       this.history[i].age = currentTime - i;
     }
   }
 
-  /**
-   * Limit history to maxHistoryDepth
-   * @private
-   */
-  _limitHistoryDepth() {
+  private _limitHistoryDepth(): void {
     if (this.history.length > this.options.maxHistoryDepth) {
       const removeCount = this.history.length - this.options.maxHistoryDepth;
       this.history.splice(0, removeCount);
@@ -409,20 +379,11 @@ export class StateManager {
     }
   }
 
-  /**
-   * Clone a state object
-   * @private
-   */
-  _cloneState(state) {
-    // Deep clone using JSON (simple but effective for serializable data)
+  private _cloneState(state: T): T {
     return JSON.parse(JSON.stringify(state));
   }
 
-  /**
-   * Clear all history
-   * @param {boolean} keepCurrent - If true, keeps only the current state
-   */
-  clearHistory(keepCurrent = false) {
+  clearHistory(keepCurrent: boolean = false): void {
     if (keepCurrent && this.currentIndex >= 0) {
       const currentState = this.history[this.currentIndex];
       this.history = [currentState];
@@ -440,20 +401,12 @@ export class StateManager {
     }
   }
 
-  /**
-   * Clear all snapshots
-   */
-  clearSnapshots() {
+  clearSnapshots(): void {
     this.snapshots.clear();
     this.nextSnapshotId = 1;
   }
 
-  /**
-   * Save state to localStorage
-   * @param {string} key - Optional custom key (uses default if not provided)
-   * @returns {boolean} True if successful
-   */
-  saveToLocalStorage(key = null) {
+  saveToLocalStorage(key: string | null = null): boolean {
     const storageKey = key || this.options.storageKey;
     
     try {
@@ -473,12 +426,7 @@ export class StateManager {
     }
   }
 
-  /**
-   * Load state from localStorage
-   * @param {string} key - Optional custom key (uses default if not provided)
-   * @returns {boolean} True if successful
-   */
-  loadFromLocalStorage(key = null) {
+  loadFromLocalStorage(key: string | null = null): boolean {
     const storageKey = key || this.options.storageKey;
     
     try {
@@ -506,11 +454,12 @@ export class StateManager {
     }
   }
 
-  /**
-   * Export state manager data
-   * @returns {Object} Exportable data
-   */
-  export() {
+  export(): {
+    history: StateEntry<T>[];
+    currentIndex: number;
+    snapshots: Array<[number, Snapshot<T>]>;
+    options: Required<StateManagerOptions>;
+  } {
     return {
       history: this.history,
       currentIndex: this.currentIndex,
@@ -519,11 +468,12 @@ export class StateManager {
     };
   }
 
-  /**
-   * Import state manager data
-   * @param {Object} data - Data to import
-   */
-  import(data) {
+  import(data: {
+    history?: StateEntry<T>[];
+    currentIndex?: number;
+    snapshots?: Array<[number, Snapshot<T>]>;
+    options?: Partial<StateManagerOptions>;
+  }): void {
     if (data.history) {
       this.history = data.history;
     }
@@ -548,11 +498,7 @@ export class StateManager {
     }
   }
 
-  /**
-   * Get history information
-   * @returns {Object} History info
-   */
-  getHistoryInfo() {
+  getHistoryInfo(): HistoryInfo {
     return {
       length: this.history.length,
       currentIndex: this.currentIndex,
@@ -562,37 +508,23 @@ export class StateManager {
     };
   }
 
-  /**
-   * Estimate memory usage of stored states
-   * @private
-   * @returns {number} Estimated bytes
-   */
-  _estimateMemoryUsage() {
+  private _estimateMemoryUsage(): number {
     try {
       const dataStr = JSON.stringify(this.history);
-      return dataStr.length * 2; // Rough estimate (2 bytes per character in UTF-16)
+      return dataStr.length * 2;
     } catch {
       return 0;
     }
   }
 
-  /**
-   * Register a callback for events
-   * @param {string} event - Event name
-   * @param {Function} callback - Callback function
-   */
-  on(event, callback) {
-    if (Object.prototype.hasOwnProperty.call(this.callbacks, event)) {
-      this.callbacks[event] = callback;
+  on(event: keyof StateManagerCallbacks<T>, callback: StateManagerCallbacks<T>[keyof StateManagerCallbacks<T>]): this {
+    if (event in this.callbacks) {
+      this.callbacks[event] = callback as any;
     }
     return this;
   }
 
-  /**
-   * Get statistics about state management
-   * @returns {Object} Statistics
-   */
-  getStatistics() {
+  getStatistics(): StateManagerStatistics {
     const compressedCount = this.history.filter(entry => entry.compressed).length;
     
     return {

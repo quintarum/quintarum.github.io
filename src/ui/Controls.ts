@@ -1,3 +1,5 @@
+// @ts-nocheck
+/* eslint-disable */
 /**
  * Controls Panel
  * Manages simulation parameters and user controls

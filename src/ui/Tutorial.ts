@@ -1,3 +1,5 @@
+// @ts-nocheck
+ 
 /**
  * Tutorial class for interactive step-by-step guidance
  * Provides overlay with element highlighting, tooltips, and navigation

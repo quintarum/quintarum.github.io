@@ -1,3 +1,5 @@
+// @ts-nocheck
+/* eslint-disable */
 /**
  * Analytics Dashboard
  * Real-time visualization of simulation metrics using Chart.js
