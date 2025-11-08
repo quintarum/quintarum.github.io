@@ -537,4 +537,209 @@ export class StateManager<T = any> {
       compressionRatio: compressedCount / Math.max(1, this.history.length)
     };
   }
+
+  /**
+   * Save state to IndexedDB for large data storage
+   */
+  async saveToIndexedDB(dbName: string = 'TDSSimulation', storeName: string = 'states'): Promise<boolean> {
+    try {
+      const db = await this._openIndexedDB(dbName, storeName);
+      
+      const transaction = db.transaction([storeName], 'readwrite');
+      const store = transaction.objectStore(storeName);
+      
+      const data = {
+        history: this.history,
+        currentIndex: this.currentIndex,
+        snapshots: Array.from(this.snapshots.entries()),
+        nextSnapshotId: this.nextSnapshotId,
+        timestamp: Date.now()
+      };
+      
+      await new Promise<void>((resolve, reject) => {
+        const request = store.put(data, 'simulation_state');
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+      
+      db.close();
+      return true;
+    } catch (error) {
+      console.error('Failed to save to IndexedDB:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Load state from IndexedDB
+   */
+  async loadFromIndexedDB(dbName: string = 'TDSSimulation', storeName: string = 'states'): Promise<boolean> {
+    try {
+      const db = await this._openIndexedDB(dbName, storeName);
+      
+      const transaction = db.transaction([storeName], 'readonly');
+      const store = transaction.objectStore(storeName);
+      
+      const data = await new Promise<any>((resolve, reject) => {
+        const request = store.get('simulation_state');
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      
+      db.close();
+      
+      if (!data) return false;
+      
+      this.history = data.history || [];
+      this.currentIndex = data.currentIndex ?? -1;
+      this.snapshots = new Map(data.snapshots || []);
+      this.nextSnapshotId = data.nextSnapshotId || 1;
+      
+      if (this.callbacks.onHistoryChanged) {
+        this.callbacks.onHistoryChanged({
+          historyLength: this.history.length,
+          currentIndex: this.currentIndex
+        });
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to load from IndexedDB:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Open IndexedDB database
+   */
+  private _openIndexedDB(dbName: string, storeName: string): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+      const request = window.indexedDB.open(dbName, 1);
+      
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+      
+      request.onupgradeneeded = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        if (!db.objectStoreNames.contains(storeName)) {
+          db.createObjectStore(storeName);
+        }
+      };
+    });
+  }
+
+  /**
+   * Clear history with memory management
+   */
+  clearHistoryWithMemoryManagement(keepRecentCount: number = 100): void {
+    if (this.history.length <= keepRecentCount) {
+      return;
+    }
+
+    const keepFrom = this.history.length - keepRecentCount;
+    this.history = this.history.slice(keepFrom);
+    this.currentIndex = Math.max(0, this.currentIndex - keepFrom);
+
+    if (this.callbacks.onHistoryChanged) {
+      this.callbacks.onHistoryChanged({
+        historyLength: this.history.length,
+        currentIndex: this.currentIndex
+      });
+    }
+  }
+
+  /**
+   * Enhanced save to localStorage with quota error handling
+   */
+  saveToLocalStorageWithErrorHandling(key: string | null = null): {
+    success: boolean;
+    error?: string;
+    quotaExceeded?: boolean;
+  } {
+    const storageKey = key || this.options.storageKey;
+
+    try {
+      const data = {
+        history: this.history,
+        currentIndex: this.currentIndex,
+        snapshots: Array.from(this.snapshots.entries()),
+        nextSnapshotId: this.nextSnapshotId,
+        timestamp: Date.now()
+      };
+
+      localStorage.setItem(storageKey, JSON.stringify(data));
+      return { success: true };
+    } catch (error) {
+      const isQuotaError =
+        error instanceof DOMException &&
+        (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED');
+
+      if (isQuotaError) {
+        // Try to free up space by clearing old history
+        this.clearHistoryWithMemoryManagement(50);
+
+        // Try again
+        try {
+          const data = {
+            history: this.history,
+            currentIndex: this.currentIndex,
+            snapshots: Array.from(this.snapshots.entries()),
+            nextSnapshotId: this.nextSnapshotId,
+            timestamp: Date.now()
+          };
+
+          localStorage.setItem(storageKey, JSON.stringify(data));
+          return { success: true };
+        } catch {
+          return {
+            success: false,
+            error: 'Storage quota exceeded even after cleanup',
+            quotaExceeded: true
+          };
+        }
+      }
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  /**
+   * Enable automatic save with configurable interval
+   */
+  private autoSaveInterval: number | null = null;
+
+  enableAutoSave(intervalMs: number = 30000, useIndexedDB: boolean = false): void {
+    this.disableAutoSave();
+
+    this.autoSaveInterval = window.setInterval(() => {
+      if (useIndexedDB) {
+        this.saveToIndexedDB().catch(console.error);
+      } else {
+        const result = this.saveToLocalStorageWithErrorHandling();
+        if (!result.success) {
+          console.warn('Auto-save failed:', result.error);
+        }
+      }
+    }, intervalMs);
+  }
+
+  /**
+   * Disable automatic save
+   */
+  disableAutoSave(): void {
+    if (this.autoSaveInterval !== null) {
+      clearInterval(this.autoSaveInterval);
+      this.autoSaveInterval = null;
+    }
+  }
+
+  /**
+   * Check if auto-save is enabled
+   */
+  isAutoSaveEnabled(): boolean {
+    return this.autoSaveInterval !== null;
+  }
 }
