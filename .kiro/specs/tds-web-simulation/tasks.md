@@ -236,8 +236,8 @@
   - Support multiple tutorial formats (text, video, interactive)
   - _Requirements: 5.8_
 
-- [ ] 9. Add internationalization support
-- [ ] 9.1 Set up i18next framework
+- [x] 9. Add internationalization support
+- [x] 9.1 Set up i18next framework
   - Configure i18next with language detection
   - Implement language switcher UI in main application
   - Add fallback language handling

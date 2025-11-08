@@ -6,6 +6,7 @@
 import { Lattice, LatticeStatistics } from './core/Lattice.js';
 import { Simulation } from './core/Simulation.js';
 import { Renderer2D } from './rendering/Renderer2D.js';
+import { initI18n, t } from './i18n/i18n.js';
 
 interface AppInstance {
   simulation: Simulation | null;
@@ -75,11 +76,11 @@ function initApp(): void {
     app.innerHTML = `
       <div style="font-family: sans-serif; background: #1a1a2e; color: #eee; min-height: 100vh; padding: 20px; box-sizing: border-box;">
         <div style="max-width: 1400px; margin: 0 auto;">
-          <h1 style="color: #E74C3C; margin: 0 0 5px 0; text-align: center;">TDS Web Simulation</h1>
-          <p style="color: #aaa; margin: 0 0 5px 0; text-align: center;">Theory of Dynamic Symmetry - Interactive Visualization</p>
+          <h1 style="color: #E74C3C; margin: 0 0 5px 0; text-align: center;">${t('app.title')}</h1>
+          <p style="color: #aaa; margin: 0 0 5px 0; text-align: center;">${t('app.subtitle')}</p>
           <p style="color: #888; margin: 0 0 20px 0; text-align: center; font-size: 13px;">
             <a href="https://doi.org/10.5281/zenodo.17465190" target="_blank" rel="noopener noreferrer" style="color: #4CAF50; text-decoration: none;">
-              Read the theory paper
+              ${t('theory.readTheory')}
             </a>
           </p>
           
@@ -90,36 +91,36 @@ function initApp(): void {
               
               <div style="text-align: center; margin-bottom: 15px;">
                 <button id="play-pause-btn" style="padding: 12px 24px; margin: 0 5px; cursor: pointer; background: #4CAF50; color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; transition: all 0.2s;">
-                  ▶ Start
+                  ▶ ${t('controls.start')}
                 </button>
                 <button id="reset-btn" style="padding: 12px 24px; margin: 0 5px; cursor: pointer; background: #2196F3; color: white; border: none; border-radius: 4px; font-size: 16px; transition: all 0.2s;">
-                  ↻ Reset
+                  ↻ ${t('controls.reset')}
                 </button>
                 <button id="anomaly-btn" style="padding: 12px 24px; margin: 0 5px; cursor: pointer; background: #E74C3C; color: white; border: none; border-radius: 4px; font-size: 16px; transition: all 0.2s;">
-                  ⚡ Add Anomaly
+                  ⚡ ${t('controls.addAnomaly')}
                 </button>
               </div>
               
               <div style="text-align: center; margin-bottom: 15px;">
                 <button id="auto-anomaly-btn" style="padding: 10px 20px; cursor: pointer; background: #0f3460; color: #aaa; border: 2px solid #2c5f8d; border-radius: 4px; font-size: 14px; transition: all 0.2s; width: 100%; max-width: 400px;">
-                  🔄 Auto-create anomalies (OFF)
+                  🔄 ${t('controls.autoAnomaliesOff')}
                 </button>
               </div>
               
               <div style="padding: 15px; background: #16213e; border-radius: 8px;">
-                <h3 style="margin: 0 0 10px 0; color: #4CAF50; font-size: 16px;">Legend</h3>
+                <h3 style="margin: 0 0 10px 0; color: #4CAF50; font-size: 16px;">${t('legend.title')}</h3>
                 <div style="display: flex; gap: 20px; justify-content: center;">
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <div style="width: 16px; height: 16px; background: #4CAF50; border-radius: 50%;"></div>
-                    <span style="font-size: 14px;">Symmetric</span>
+                    <span style="font-size: 14px;">${t('legend.symmetric')}</span>
                   </div>
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <div style="width: 16px; height: 16px; background: #FFC107; border-radius: 50%;"></div>
-                    <span style="font-size: 14px;">Asymmetric</span>
+                    <span style="font-size: 14px;">${t('legend.asymmetric')}</span>
                   </div>
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <div style="width: 16px; height: 16px; background: #F44336; border-radius: 50%;"></div>
-                    <span style="font-size: 14px;">Anomaly</span>
+                    <span style="font-size: 14px;">${t('legend.anomaly')}</span>
                   </div>
                 </div>
               </div>
@@ -128,39 +129,39 @@ function initApp(): void {
             <!-- Right column: Stats and chart -->
             <div>
               <div id="stats" style="padding: 15px; background: #16213e; border-radius: 8px; margin-bottom: 15px;">
-                <h3 style="margin: 0 0 10px 0; color: #4CAF50; font-size: 16px;">Statistics</h3>
+                <h3 style="margin: 0 0 10px 0; color: #4CAF50; font-size: 16px;">${t('stats.title')}</h3>
                 <div id="stats-content"></div>
               </div>
               
               <div style="padding: 15px; background: #16213e; border-radius: 8px;">
-                <h3 style="margin: 0 0 10px 0; color: #4CAF50; font-size: 16px;">State Distribution</h3>
+                <h3 style="margin: 0 0 10px 0; color: #4CAF50; font-size: 16px;">${t('stats.title')}</h3>
                 <canvas id="chart-canvas" width="350" height="200" style="width: 100%; height: auto;"></canvas>
               </div>
             </div>
           </div>
           
           <div style="margin-top: 20px; padding: 20px; background: #16213e; border-radius: 8px; text-align: left;">
-            <h3 style="margin: 0 0 10px 0; color: #4CAF50; font-size: 18px;">📚 How it works (TDS Theory)</h3>
+            <h3 style="margin: 0 0 10px 0; color: #4CAF50; font-size: 18px;">📚 ${t('theory.title')}</h3>
             <div style="color: #ccc; font-size: 14px; line-height: 1.6;">
-              <p style="margin: 8px 0;"><strong style="color: #4CAF50;">🟢 Symmetric nodes</strong> are in stable equilibrium state</p>
-              <p style="margin: 8px 0;"><strong style="color: #FFC107;">🟡 Asymmetric nodes</strong> have broken symmetry but are not anomalies yet</p>
-              <p style="margin: 8px 0;"><strong style="color: #F44336;">🔴 Anomalies</strong> are high-energy symmetry violations that spread to neighbors</p>
+              <p style="margin: 8px 0;"><strong style="color: #4CAF50;">🟢 ${t('theory.symmetricNodes')}</strong> ${t('theory.symmetricDesc')}</p>
+              <p style="margin: 8px 0;"><strong style="color: #FFC107;">🟡 ${t('theory.asymmetricNodes')}</strong> ${t('theory.asymmetricDesc')}</p>
+              <p style="margin: 8px 0;"><strong style="color: #F44336;">🔴 ${t('theory.anomalyNodes')}</strong> ${t('theory.anomalyDesc')}</p>
               <p style="margin: 12px 0 8px 0; color: #aaa; border-top: 1px solid #0f3460; padding-top: 12px;">
-                <strong>What to observe:</strong>
+                <strong>${t('theory.whatToObserve')}</strong>
               </p>
               <ul style="margin: 0; padding-left: 20px;">
-                <li>Click "Start" to begin the simulation</li>
-                <li>Click "Add Anomaly" to inject red anomalies</li>
-                <li>Watch anomalies spread to yellow neighbors</li>
-                <li>Yellow nodes may become red or return to green</li>
-                <li>Enable auto-mode to see continuous dynamics</li>
+                <li>${t('theory.observe1')}</li>
+                <li>${t('theory.observe2')}</li>
+                <li>${t('theory.observe3')}</li>
+                <li>${t('theory.observe4')}</li>
+                <li>${t('theory.observe5')}</li>
               </ul>
               <p style="margin: 12px 0 0 0; padding-top: 12px; border-top: 1px solid #0f3460; line-height: 1.5;">
-                <strong>Theory of Dynamic Symmetry (TDS)</strong> proposes that fundamental physical phenomena emerge from reversible symmetry dynamics in a discrete lattice structure. The theory suggests that dark matter, matter-antimatter asymmetry, and quantum measurement can be explained through symmetry transitions and anomaly propagation without introducing new particles.
+                <strong>${t('theory.theoryTitle')}</strong> ${t('theory.theoryDesc')}
               </p>
               <p style="margin: 8px 0 0 0;">
                 <a href="https://doi.org/10.5281/zenodo.17465190" target="_blank" rel="noopener noreferrer" style="color: #4CAF50; text-decoration: none;">
-                  Read the full paper
+                  ${t('theory.readPaper')}
                 </a>
               </p>
             </div>
@@ -210,7 +211,7 @@ function setupControls(simulation: Simulation, renderer: Renderer2D, lattice: La
     renderer.getVisualEffects().addHalo(400, 300, '#F39C12', 2000);
     
     if (anomalyBtn) {
-      anomalyBtn.innerHTML = `⚡ Add Anomaly (${anomalyCount})`;
+      anomalyBtn.innerHTML = `⚡ ${t('controls.addAnomaly')} (${anomalyCount})`;
     }
   };
 
@@ -219,12 +220,12 @@ function setupControls(simulation: Simulation, renderer: Renderer2D, lattice: La
     if (window.app.isRunning) {
       simulation.pause();
       window.app.isRunning = false;
-      playPauseBtn.innerHTML = '▶ Start';
+      playPauseBtn.innerHTML = `▶ ${t('controls.start')}`;
       playPauseBtn.style.background = '#4CAF50';
     } else {
       simulation.start();
       window.app.isRunning = true;
-      playPauseBtn.innerHTML = '⏸ Pause';
+      playPauseBtn.innerHTML = `⏸ ${t('controls.pause')}`;
       playPauseBtn.style.background = '#FF9800';
     }
   });
@@ -235,11 +236,11 @@ function setupControls(simulation: Simulation, renderer: Renderer2D, lattice: La
     window.app.isRunning = false;
     anomalyCount = 0;
     if (playPauseBtn) {
-      playPauseBtn.innerHTML = '▶ Start';
+      playPauseBtn.innerHTML = `▶ ${t('controls.start')}`;
       playPauseBtn.style.background = '#4CAF50';
     }
     if (anomalyBtn) {
-      anomalyBtn.innerHTML = '⚡ Add Anomaly';
+      anomalyBtn.innerHTML = `⚡ ${t('controls.addAnomaly')}`;
     }
   });
 
@@ -257,7 +258,7 @@ function setupControls(simulation: Simulation, renderer: Renderer2D, lattice: La
     
     if (autoAnomalyEnabled) {
       // Enable auto-mode
-      autoAnomalyBtn.innerHTML = '🔄 Auto-create anomalies (ON)';
+      autoAnomalyBtn.innerHTML = `🔄 ${t('controls.autoAnomaliesOn')}`;
       autoAnomalyBtn.style.background = '#2E7D32';
       autoAnomalyBtn.style.color = 'white';
       autoAnomalyBtn.style.borderColor = '#4CAF50';
@@ -270,7 +271,7 @@ function setupControls(simulation: Simulation, renderer: Renderer2D, lattice: La
       }, 5000);
     } else {
       // Disable auto-mode
-      autoAnomalyBtn.innerHTML = '🔄 Auto-create anomalies (OFF)';
+      autoAnomalyBtn.innerHTML = `🔄 ${t('controls.autoAnomaliesOff')}`;
       autoAnomalyBtn.style.background = '#0f3460';
       autoAnomalyBtn.style.color = '#aaa';
       autoAnomalyBtn.style.borderColor = '#2c5f8d';
@@ -316,12 +317,12 @@ function updateStats(lattice: Lattice, simulation: Simulation): void {
     
     statsContent.innerHTML = `
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
-        <div><strong>Time:</strong> ${state.time.toFixed(1)}s</div>
-        <div><strong>Steps:</strong> ${state.stepCount}</div>
+        <div><strong>${t('stats.time')}:</strong> ${state.time.toFixed(1)}s</div>
+        <div><strong>${t('stats.steps')}:</strong> ${state.stepCount}</div>
         <div style="grid-column: 1 / -1; margin-top: 10px; padding-top: 10px; border-top: 1px solid #0f3460;">
           <div style="margin-bottom: 8px;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-              <span>🟢 Symmetric</span>
+              <span>🟢 ${t('stats.symmetric')}</span>
               <strong>${stats.symmetric} (${symPercent}%)</strong>
             </div>
             <div style="background: #0f3460; height: 8px; border-radius: 4px; overflow: hidden;">
@@ -330,7 +331,7 @@ function updateStats(lattice: Lattice, simulation: Simulation): void {
           </div>
           <div style="margin-bottom: 8px;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-              <span>🟡 Asymmetric</span>
+              <span>🟡 ${t('stats.asymmetric')}</span>
               <strong>${stats.asymmetric} (${asymPercent}%)</strong>
             </div>
             <div style="background: #0f3460; height: 8px; border-radius: 4px; overflow: hidden;">
@@ -339,7 +340,7 @@ function updateStats(lattice: Lattice, simulation: Simulation): void {
           </div>
           <div style="margin-bottom: 8px;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-              <span>🔴 Anomalies</span>
+              <span>🔴 ${t('stats.anomalies')}</span>
               <strong>${stats.anomalies} (${anomPercent}%)</strong>
             </div>
             <div style="background: #0f3460; height: 8px; border-radius: 4px; overflow: hidden;">
@@ -348,7 +349,7 @@ function updateStats(lattice: Lattice, simulation: Simulation): void {
           </div>
         </div>
         <div style="grid-column: 1 / -1; margin-top: 10px; padding-top: 10px; border-top: 1px solid #0f3460;">
-          <strong>Avg Energy:</strong> ${stats.avgEnergy.toFixed(2)}
+          <strong>${t('stats.avgEnergy')}:</strong> ${stats.avgEnergy.toFixed(2)}
         </div>
       </div>
     `;
@@ -441,4 +442,12 @@ function updateChart(stats: LatticeStatistics): void {
 }
 
 // Initialize on DOM ready
-document.addEventListener('DOMContentLoaded', initApp);
+document.addEventListener('DOMContentLoaded', async () => {
+  // Initialize i18n first
+  await initI18n();
+  // eslint-disable-next-line no-console
+  console.log('🌍 Language initialized');
+  
+  // Then initialize app
+  initApp();
+});

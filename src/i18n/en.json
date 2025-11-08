@@ -1,15 +1,54 @@
 {
   "app": {
     "title": "TDS Web Simulation",
-    "description": "Interactive visualization of Theory of Dynamic Symmetry"
+    "description": "Interactive visualization of Theory of Dynamic Symmetry",
+    "subtitle": "Theory of Dynamic Symmetry - Interactive Visualization"
   },
   "controls": {
     "start": "Start",
     "stop": "Stop",
     "pause": "Pause",
-    "reset": "Reset"
+    "reset": "Reset",
+    "addAnomaly": "Add Anomaly",
+    "autoAnomalies": "Auto-create anomalies",
+    "autoAnomaliesOn": "Auto-create anomalies (ON)",
+    "autoAnomaliesOff": "Auto-create anomalies (OFF)"
+  },
+  "stats": {
+    "title": "Statistics",
+    "time": "Time",
+    "steps": "Steps",
+    "symmetric": "Symmetric",
+    "asymmetric": "Asymmetric",
+    "anomalies": "Anomalies",
+    "avgEnergy": "Avg Energy"
+  },
+  "legend": {
+    "title": "Legend",
+    "symmetric": "Symmetric",
+    "asymmetric": "Asymmetric",
+    "anomaly": "Anomaly"
   },
   "tutorial": {
     "welcome": "Welcome to TDS Web Simulation"
+  },
+  "theory": {
+    "title": "How it works (TDS Theory)",
+    "symmetricNodes": "Symmetric nodes",
+    "symmetricDesc": "are in stable equilibrium state",
+    "asymmetricNodes": "Asymmetric nodes",
+    "asymmetricDesc": "have broken symmetry but are not anomalies yet",
+    "anomalyNodes": "Anomalies",
+    "anomalyDesc": "are high-energy symmetry violations that spread to neighbors",
+    "whatToObserve": "What to observe:",
+    "observe1": "Click \"Start\" to begin the simulation",
+    "observe2": "Click \"Add Anomaly\" to inject red anomalies",
+    "observe3": "Watch anomalies spread to yellow neighbors",
+    "observe4": "Yellow nodes may become red or return to green",
+    "observe5": "Enable auto-mode to see continuous dynamics",
+    "theoryTitle": "Theory of Dynamic Symmetry (TDS)",
+    "theoryDesc": "proposes that fundamental physical phenomena emerge from reversible symmetry dynamics in a discrete lattice structure. The theory suggests that dark matter, matter-antimatter asymmetry, and quantum measurement can be explained through symmetry transitions and anomaly propagation without introducing new particles.",
+    "readPaper": "Read the full paper",
+    "readTheory": "Read the theory paper"
   }
 }
