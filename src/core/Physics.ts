@@ -1,6 +1,7 @@
 import { Node, NodeState, PhysicsParams } from './Node.js';
 import { Lattice } from './Lattice.js';
 import { ConservationEnforcer, ConservationReport } from './ConservationEnforcer.js';
+import { AnomalyDetector, AnomalyReport } from './AnomalyDetector.js';
 
 interface ReversibilityMetrics {
   energyConservation: number;
@@ -40,6 +41,7 @@ interface ExternalField {
  */
 export class Physics {
   private static conservationEnforcer: ConservationEnforcer | null = null;
+  private static anomalyDetector: AnomalyDetector | null = null;
 
   /**
    * Initialize conservation enforcer
@@ -68,6 +70,39 @@ export class Physics {
    */
   static enforceConservation(lattice: Lattice): ConservationReport {
     return this.getConservationEnforcer().enforceConservation(lattice);
+  }
+
+  /**
+   * Initialize anomaly detector
+   */
+  static initializeAnomalyDetector(
+    historyDepth: number = 50,
+    persistenceThreshold: number = 30,
+    E_asym_threshold: number = 0.5
+  ): void {
+    this.anomalyDetector = new AnomalyDetector({
+      historyDepth,
+      persistenceThreshold,
+      E_asym_threshold,
+      autoMark: true
+    });
+  }
+
+  /**
+   * Get anomaly detector (creates if not exists)
+   */
+  static getAnomalyDetector(): AnomalyDetector {
+    if (!this.anomalyDetector) {
+      this.initializeAnomalyDetector();
+    }
+    return this.anomalyDetector!;
+  }
+
+  /**
+   * Detect anomalies in lattice
+   */
+  static detectAnomalies(lattice: Lattice): AnomalyReport {
+    return this.getAnomalyDetector().detectAnomalies(lattice);
   }
   /**
    * Calculate symmetry transition probability for a node

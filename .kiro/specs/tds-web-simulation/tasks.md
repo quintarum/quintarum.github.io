@@ -80,11 +80,12 @@ This implementation plan breaks down the TDS Web Simulation into discrete, manag
   - Integrated into Physics and Simulation classes
   - _Requirements: 7.8, 8.4, 13.1_
 
-- [ ] 3.3 Implement TDS anomaly detection algorithm
-  - Create detectAnomalies() to identify persistent broken nodes
-  - Track node states over configurable history depth
-  - Calculate ω₀ for detected anomalies based on persistence
-  - Mark nodes as 'anomalous' when persistence criteria met
+- [x] 3.3 Implement TDS anomaly detection algorithm (COMPLETED)
+  - Created AnomalyDetector class with detectAnomalies() method
+  - Tracks node states over configurable history depth (default 50 steps)
+  - Calculates ω₀ for detected anomalies based on persistence and E_asym
+  - Auto-marks nodes as 'anomalous' when persistence criteria met (>80% broken/anomalous states)
+  - Integrated into Physics class with initializeAnomalyDetector()
   - _Requirements: 3.2, 3.6, 3.7_
 
 - [ ]* 3.4 Write unit tests for Physics TDS dynamics
