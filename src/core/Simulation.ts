@@ -76,6 +76,25 @@ interface ExportData {
   lattice: LatticeData;
   bookmarks: Bookmark[];
   statistics: LatticeStatistics;
+  // TDS-specific data
+  tdsMetrics?: {
+    E_sym_total: number;
+    E_asym_total: number;
+    E_0_total: number;
+    T_info: number;
+    phaseCoherence: number;
+  };
+  conservationMetrics?: {
+    isConserved: boolean;
+    violations: number;
+    maxDeviation: number;
+    avgDeviation: number;
+  };
+  reversibilityMetrics?: {
+    validations: number;
+    violationRate: number;
+    avgDeviation: number;
+  };
 }
 
 /**
@@ -528,13 +547,46 @@ export class Simulation {
   }
 
   export(): ExportData {
+    const stats = this.lattice.getStatistics();
+    const energies = this.lattice.calculateTotalEnergy();
+    
+    // Get conservation metrics if enforcer is available
+    let conservationMetrics;
+    if (this.params.enforceConservation) {
+      const enforcer = Physics.getConservationEnforcer();
+      const conservationStats = enforcer.getStatistics();
+      conservationMetrics = {
+        isConserved: conservationStats.totalViolations === 0,
+        violations: conservationStats.totalViolations,
+        maxDeviation: conservationStats.maxDeviation,
+        avgDeviation: conservationStats.avgDeviation
+      };
+    }
+    
+    // Get reversibility metrics
+    const reversibilityStats = this.reversibilityValidator.getStatistics();
+    const reversibilityMetrics = {
+      validations: reversibilityStats.totalValidations,
+      violationRate: reversibilityStats.violationRate,
+      avgDeviation: reversibilityStats.avgDeviation
+    };
+    
     return {
       params: this.params,
       time: this.time,
       stepCount: this.stepCount,
       lattice: this.lattice.toJSON(),
       bookmarks: this.bookmarks,
-      statistics: this.lattice.getStatistics()
+      statistics: stats,
+      tdsMetrics: {
+        E_sym_total: energies.E_sym,
+        E_asym_total: energies.E_asym,
+        E_0_total: energies.E_0,
+        T_info: stats.T_info,
+        phaseCoherence: stats.phaseCoherence
+      },
+      conservationMetrics,
+      reversibilityMetrics
     };
   }
 

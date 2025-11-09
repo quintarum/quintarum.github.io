@@ -106,11 +106,13 @@ This implementation plan breaks down the TDS Web Simulation into discrete, manag
   - Integrated into Simulation class
   - _Requirements: 7.8, 7.9, 13.1, 13.2_
 
-- [ ] 4.2 Update export/import for TDS data
-  - Include E_sym, E_asym, E_0, T_info in exported data
-  - Store spin states (s_i) in addition to node states
-  - Include ω₀ values for anomalous nodes
-  - Add conservation metrics to export
+- [x] 4.2 Update export/import for TDS data (COMPLETED)
+  - Updated ExportData interface with tdsMetrics (E_sym, E_asym, E_0, T_info, phaseCoherence)
+  - Added conservationMetrics (isConserved, violations, deviations)
+  - Added reversibilityMetrics (validations, violationRate)
+  - Spin states (s_i) already stored in NodeData from Node.toJSON()
+  - ω₀ values already stored in NodeData for all nodes
+  - Export/import tested and working correctly
   - _Requirements: 12.2, 12.4_
 
 - [ ]* 4.3 Write integration tests for TDS Simulation
