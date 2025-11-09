@@ -56,6 +56,14 @@ export class Renderer2D {
   }
 
   /**
+   * Set custom colorizer for spectrum mode
+   * @param {SpectrumColorizer} colorizer - Custom colorizer
+   */
+  setColorizer(colorizer) {
+    this.customColorizer = colorizer;
+  }
+
+  /**
    * Main render method
    * @param {Lattice} lattice - Lattice to render
    */
@@ -258,7 +266,19 @@ export class Renderer2D {
    * @param {number} y - Screen Y coordinate
    */
   drawNode(node, x, y) {
-    const colors = this.colorScheme.getNodeColor(node);
+    // Use custom colorizer if available, otherwise use default color scheme
+    let colors;
+    if (this.customColorizer) {
+      const [r, g, b] = this.customColorizer.getNodeColor(node);
+      const customColor = `rgb(${Math.floor(r * 255)}, ${Math.floor(g * 255)}, ${Math.floor(b * 255)})`;
+      colors = {
+        base: customColor,
+        glow: customColor,
+        border: customColor
+      };
+    } else {
+      colors = this.colorScheme.getNodeColor(node);
+    }
     const nodeSize = this.options.nodeSize;
     
     // Smooth state transitions
@@ -294,10 +314,19 @@ export class Renderer2D {
       const glowSize = nodeSize * 2.5;
       const gradient = this.ctx.createRadialGradient(x, y, 0, x, y, glowSize);
       
-      const glowAlpha = Math.floor(this.options.glowIntensity * 60).toString(16).padStart(2, '0');
-      gradient.addColorStop(0, colors.glow + glowAlpha);
-      gradient.addColorStop(0.5, colors.glow + '20');
-      gradient.addColorStop(1, colors.glow + '00');
+      // Convert color to rgba format
+      let glowColor = colors.glow;
+      if (glowColor.startsWith('rgb(')) {
+        glowColor = glowColor.replace('rgb(', 'rgba(').replace(')', ', 1)');
+      }
+      
+      const alpha1 = this.options.glowIntensity * 0.6;
+      const alpha2 = 0.2;
+      const alpha3 = 0;
+      
+      gradient.addColorStop(0, glowColor.replace(', 1)', `, ${alpha1})`));
+      gradient.addColorStop(0.5, glowColor.replace(', 1)', `, ${alpha2})`));
+      gradient.addColorStop(1, glowColor.replace(', 1)', `, ${alpha3})`));
       
       this.ctx.fillStyle = gradient;
       this.ctx.beginPath();

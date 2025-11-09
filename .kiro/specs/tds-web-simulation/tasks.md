@@ -367,18 +367,19 @@ This implementation plan breaks down the TDS Web Simulation into discrete, manag
   - Supports adjustable wave number k_x with setKx()
   - _Requirements: 8.1, 8.3_
 
-- [x] 11.5 Implement stats panel with CSV export (COMPLETED - backend)
+- [x] 11.5 Implement stats panel with CSV export (COMPLETED)
   - Created AdvancedAnalytics class integrating all components
   - Provides getStatsPanelData() returning {rho, drift, rmsAkx}
   - Implements exportStatsToCSV() with all metrics
-  - UI integration pending
+  - UI integration completed in main.ts
   - _Requirements: 8.6, 12.1_
 
-- [x] 11.6 Implement simulation log panel (COMPLETED - backend)
+- [x] 11.6 Implement simulation log panel (COMPLETED)
   - Created SimulationLogger class with 1500 entry circular buffer
   - Log format: "t=X | E0=Y | E_sym=Z | E_asym=W | A_kx=V"
   - Implements exportToText() and exportToCSV()
   - Provides getDisplayText() for UI
+  - Integrated into AdvancedAnalytics
   - _Requirements: 8.9, 12.1_
 
 - [x] 11.7 Add color spectrum visualization mode (COMPLETED)

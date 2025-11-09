@@ -12,7 +12,10 @@
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "lint": "npm run type-check && eslint . --max-warnings 0",
-    "lint:fix": "eslint . --max-warnings 0 --fix"
+    "lint:fix": "eslint . --max-warnings 0 --fix",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage"
   },
   "repository": {
     "type": "git",
@@ -28,6 +31,8 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@jest/globals": "^30.2.0",
+    "@types/jest": "^30.0.0",
     "@types/node": "^22.10.2",
     "@types/papaparse": "^5.3.15",
     "@types/three": "^0.181.0",
@@ -35,10 +40,12 @@
     "@typescript-eslint/parser": "^8.18.2",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
+    "jest": "^30.2.0",
     "patch-package": "^8.0.1",
     "png-to-ico": "^2.1.8",
     "prettier": "^3.6.2",
     "sharp": "^0.34.5",
+    "ts-jest": "^29.4.5",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vite": "^7.2.2",

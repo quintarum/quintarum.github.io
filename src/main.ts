@@ -8,6 +8,9 @@ import { Simulation } from './core/Simulation.js';
 import { Renderer2D } from './rendering/Renderer2D.js';
 import { initI18n, t } from './i18n/i18n.js';
 import { DataExporter } from './utils/DataExporter.js';
+import { AdvancedAnalytics } from './analytics/AdvancedAnalytics.js';
+import { SpectrumColorizer } from './rendering/SpectrumColorizer.js';
+import { AuthorPhysics } from './core/AuthorPhysics.js';
 
 interface AppInstance {
   simulation: Simulation | null;
@@ -15,6 +18,11 @@ interface AppInstance {
   lattice: Lattice | null;
   isRunning: boolean;
   animationId: number | null;
+  analytics: AdvancedAnalytics | null;
+  colorizer: SpectrumColorizer | null;
+  useSpectrumColors: boolean;
+  authorPhysics: AuthorPhysics | null;
+  useAuthorMode: boolean;
 }
 
 declare global {
@@ -29,7 +37,12 @@ window.app = {
   renderer: null,
   lattice: null,
   isRunning: false,
-  animationId: null
+  animationId: null,
+  analytics: null,
+  colorizer: null,
+  useSpectrumColors: false,
+  authorPhysics: null,
+  useAuthorMode: false
 };
 
 // Initialize application
@@ -70,6 +83,23 @@ function initApp(): void {
   });
   renderer.initialize(canvas.width, canvas.height);
   window.app.renderer = renderer;
+
+  // Create advanced analytics
+  const analytics = new AdvancedAnalytics({
+    kx: 6,
+    latticeSize: lattice.width,
+    E_0_ref: 1.0,
+    maxLogEntries: 1500
+  });
+  window.app.analytics = analytics;
+
+  // Create spectrum colorizer (simple mode by default)
+  const colorizer = SpectrumColorizer.createSimple(lattice.width);
+  window.app.colorizer = colorizer;
+
+  // Create author physics engine
+  const authorPhysics = new AuthorPhysics(lattice.width, 6);
+  window.app.authorPhysics = authorPhysics;
 
   // Create UI
   const app = document.getElementById('app');
@@ -137,6 +167,34 @@ function initApp(): void {
               <div style="padding: 15px; background: #16213e; border-radius: 8px; margin-bottom: 15px;">
                 <h3 style="margin: 0 0 10px 0; color: #4CAF50; font-size: 16px;">${t('stats.title')}</h3>
                 <canvas id="chart-canvas" width="350" height="200" style="width: 100%; height: auto;"></canvas>
+              </div>
+              
+              <div style="padding: 15px; background: #16213e; border-radius: 8px; margin-bottom: 15px;">
+                <h3 style="margin: 0 0 10px 0; color: #4CAF50; font-size: 16px;">🔬 Advanced Analytics</h3>
+                <div id="advanced-stats" style="font-size: 13px; color: #ccc; line-height: 1.8;">
+                  <div><strong>ρ(E_sym, E_asym):</strong> <span id="correlation-value">--</span></div>
+                  <div><strong>Energy Drift:</strong> <span id="drift-value">--</span></div>
+                  <div><strong>RMS A_kx:</strong> <span id="rms-akx-value">--</span></div>
+                  <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #0f3460;">
+                    <strong>Conservation:</strong> <span id="conservation-status" style="color: #4CAF50;">✓ Good</span>
+                  </div>
+                </div>
+                <div style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <button id="run-photon-test-btn" style="padding: 8px; background: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                    🔄 Photon Test
+                  </button>
+                  <button id="toggle-spectrum-btn" style="padding: 8px; background: #0f3460; color: #aaa; border: 2px solid #2c5f8d; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                    🌈 Spectrum
+                  </button>
+                </div>
+                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #0f3460;">
+                  <button id="toggle-author-mode-btn" style="padding: 8px; width: 100%; background: #0f3460; color: #aaa; border: 2px solid #2c5f8d; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                    🔬 Author Mode OFF
+                  </button>
+                  <div style="font-size: 11px; color: #888; margin-top: 4px; text-align: center;">
+                    Exact reference implementation
+                  </div>
+                </div>
               </div>
               
               <div style="padding: 15px; background: #16213e; border-radius: 8px;">
@@ -364,13 +422,112 @@ function setupControls(simulation: Simulation, renderer: Renderer2D, lattice: La
       exportPdfBtn.style.transform = 'scale(1)';
     }, 100);
   });
+
+  // Advanced analytics buttons
+  const runPhotonTestBtn = document.getElementById('run-photon-test-btn');
+  const toggleSpectrumBtn = document.getElementById('toggle-spectrum-btn');
+  const toggleAuthorModeBtn = document.getElementById('toggle-author-mode-btn');
+
+  runPhotonTestBtn?.addEventListener('click', async () => {
+    runPhotonTestBtn.innerHTML = '⏳ Running...';
+    runPhotonTestBtn.style.background = '#666';
+    
+    try {
+      if (window.app.useAuthorMode && window.app.authorPhysics && window.app.lattice) {
+        // Use Author Physics test
+        const result = await window.app.authorPhysics.photonWindowTest(window.app.lattice, 100);
+        const color = result.passed ? '#4CAF50' : '#F44336';
+        
+        alert(`Photon Window Test (Author Mode)\n\n` +
+              `Hamming Distance: ${result.hammingDistance}\n` +
+              `Ratio: ${result.ratio.toFixed(6)}\n` +
+              `Status: ${result.message}\n\n` +
+              `${result.passed ? '✓ PERFECT REVERSIBILITY' : '✗ REVERSIBILITY LOST'}`);
+        
+        runPhotonTestBtn.style.background = color;
+      } else if (window.app.analytics && window.app.simulation) {
+        // Use standard analytics test
+        const result = await window.app.analytics.runPhotonWindowTest(window.app.simulation, 100);
+        const photonTest = window.app.analytics.getComponents().photonWindow;
+        const color = photonTest.getResultColor(result);
+        
+        alert(`Photon Window Test Results:\n\n${photonTest.formatResult(result)}`);
+        
+        runPhotonTestBtn.style.background = color;
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      alert(`Test failed: ${errorMessage}`);
+      runPhotonTestBtn.style.background = '#9C27B0';
+    }
+    
+    runPhotonTestBtn.innerHTML = '🔄 Photon Test';
+  });
+
+  toggleSpectrumBtn?.addEventListener('click', () => {
+    window.app.useSpectrumColors = !window.app.useSpectrumColors;
+    
+    if (window.app.useSpectrumColors) {
+      // Enable spectrum mode
+      window.app.colorizer = new SpectrumColorizer(6, lattice.width);
+      toggleSpectrumBtn.innerHTML = '🌈 Spectrum ON';
+      toggleSpectrumBtn.style.background = '#2E7D32';
+      toggleSpectrumBtn.style.color = 'white';
+      toggleSpectrumBtn.style.borderColor = '#4CAF50';
+    } else {
+      // Disable spectrum mode
+      window.app.colorizer = SpectrumColorizer.createSimple(lattice.width);
+      toggleSpectrumBtn.innerHTML = '🌈 Spectrum';
+      toggleSpectrumBtn.style.background = '#0f3460';
+      toggleSpectrumBtn.style.color = '#aaa';
+      toggleSpectrumBtn.style.borderColor = '#2c5f8d';
+    }
+  });
+
+  toggleAuthorModeBtn?.addEventListener('click', () => {
+    window.app.useAuthorMode = !window.app.useAuthorMode;
+    
+    if (window.app.useAuthorMode && window.app.authorPhysics) {
+      // Enable Author Mode
+      window.app.authorPhysics.initializeLattice(lattice);
+      toggleAuthorModeBtn.innerHTML = '🔬 Author Mode ON';
+      toggleAuthorModeBtn.style.background = '#2E7D32';
+      toggleAuthorModeBtn.style.color = 'white';
+      toggleAuthorModeBtn.style.borderColor = '#4CAF50';
+      
+      alert('Author Mode ENABLED\n\n' +
+            'Using exact reference implementation:\n' +
+            '• Swap-based dynamics (Margolus)\n' +
+            '• E_sym = aligned spins\n' +
+            '• E_asym = misaligned spins\n' +
+            '• Photon Window Test validation\n\n' +
+            'Lattice reinitialized with cosine wave.');
+    } else {
+      // Disable Author Mode
+      toggleAuthorModeBtn.innerHTML = '🔬 Author Mode OFF';
+      toggleAuthorModeBtn.style.background = '#0f3460';
+      toggleAuthorModeBtn.style.color = '#aaa';
+      toggleAuthorModeBtn.style.borderColor = '#2c5f8d';
+    }
+  });
 }
 
 function startAnimationLoop(simulation: Simulation, renderer: Renderer2D, lattice: Lattice): void {
   function animate(): void {
     // Update simulation if running
-    if (window.app.isRunning && simulation.isRunning && !simulation.isPaused) {
-      simulation.step();
+    if (window.app.isRunning) {
+      if (window.app.useAuthorMode && window.app.authorPhysics) {
+        // Use author's physics
+        window.app.authorPhysics.step(lattice);
+      } else if (simulation.isRunning && !simulation.isPaused) {
+        // Use standard simulation
+        simulation.step();
+      }
+    }
+
+    // Apply colorizer to renderer
+    if (window.app.colorizer) {
+      renderer.setColorizer(window.app.colorizer);
     }
 
     // Render
@@ -434,6 +591,44 @@ function updateStats(lattice: Lattice, simulation: Simulation): void {
         </div>
       </div>
     `;
+  }
+  
+  // Update advanced analytics
+  if (window.app.analytics && window.app.simulation) {
+    window.app.analytics.update(window.app.simulation);
+    const analyticsData = window.app.analytics.getStatsPanelData();
+    
+    const correlationEl = document.getElementById('correlation-value');
+    const driftEl = document.getElementById('drift-value');
+    const rmsAkxEl = document.getElementById('rms-akx-value');
+    const conservationEl = document.getElementById('conservation-status');
+    
+    if (correlationEl) {
+      correlationEl.textContent = analyticsData.rho;
+    }
+    if (driftEl) {
+      driftEl.textContent = analyticsData.drift;
+    }
+    if (rmsAkxEl) {
+      rmsAkxEl.textContent = analyticsData.rmsAkx;
+    }
+    
+    // Update conservation status
+    if (conservationEl && simulation.getReversibilityValidator) {
+      const validator = simulation.getReversibilityValidator();
+      const statusObj = validator.getConservationStatus();
+      
+      if (statusObj.status === 'good') {
+        conservationEl.innerHTML = '✓ Good';
+        conservationEl.style.color = '#4CAF50';
+      } else if (statusObj.status === 'warning') {
+        conservationEl.innerHTML = '⚠ Warning';
+        conservationEl.style.color = '#FFC107';
+      } else {
+        conservationEl.innerHTML = '✗ Error';
+        conservationEl.style.color = '#F44336';
+      }
+    }
   }
   
   // Update simple chart
