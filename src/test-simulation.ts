@@ -38,10 +38,10 @@ console.log('✓ Simulation stepped 5 times');
 
 const stats = lattice.getStatistics();
 console.log('✓ Final statistics:', {
-  symmetric: stats.symmetric,
-  asymmetric: stats.asymmetric,
-  anomalies: stats.anomalies,
-  avgEnergy: stats.avgEnergy.toFixed(2)
+  vacuum: stats.vacuum,
+  broken: stats.broken,
+  anomalous: stats.anomalous,
+  avgEnergy: (stats.totalE_0 / stats.total).toFixed(2)
 });
 
 console.log('✅ All TypeScript core modules working correctly!');

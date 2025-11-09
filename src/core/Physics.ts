@@ -105,13 +105,17 @@ export class Physics {
       
       if (Math.random() < influenceProbability) {
         if (distance < (params.interactionRange || 3) * 0.3) {
-          node.setState('anomaly');
+          node.setState('anomalous');
         } else if (distance < (params.interactionRange || 3) * 0.7) {
-          if (node.state === 'symmetric') {
-            node.setState('asymmetric');
+          if (node.state === 'vacuum') {
+            node.setState('broken');
           }
         } else {
-          node.energy += waveEffect * 2.0;
+          // Increase energy by adding to E_asym (symmetry breaking)
+          const currentE0 = node.getTotalEnergy();
+          const boost = waveEffect * 2.0;
+          node.E_asym = Math.min(currentE0, node.E_asym + boost);
+          node.E_sym = currentE0 - node.E_asym;
         }
         
         affectedNodes.push(node);
@@ -198,9 +202,9 @@ export class Physics {
    */
   private static _isReversibleTransition(fromState: NodeState, toState: NodeState): boolean {
     const validTransitions: Record<NodeState, NodeState[]> = {
-      'symmetric': ['symmetric', 'asymmetric'],
-      'asymmetric': ['symmetric', 'asymmetric', 'anomaly'],
-      'anomaly': ['asymmetric', 'anomaly']
+      'vacuum': ['vacuum', 'broken'],
+      'broken': ['vacuum', 'broken', 'anomalous'],
+      'anomalous': ['broken', 'anomalous']
     };
     
     return validTransitions[fromState]?.includes(toState) ?? false;
@@ -237,20 +241,20 @@ export class Physics {
     
     if (total === 0) return 0;
     
-    const pSymmetric = stats.symmetric / total;
-    const pAsymmetric = stats.asymmetric / total;
-    const pAnomaly = stats.anomalies / total;
+    const pVacuum = stats.vacuum / total;
+    const pBroken = stats.broken / total;
+    const pAnomalous = stats.anomalous / total;
     
     let entropy = 0;
     
-    if (pSymmetric > 0) {
-      entropy -= pSymmetric * Math.log2(pSymmetric);
+    if (pVacuum > 0) {
+      entropy -= pVacuum * Math.log2(pVacuum);
     }
-    if (pAsymmetric > 0) {
-      entropy -= pAsymmetric * Math.log2(pAsymmetric);
+    if (pBroken > 0) {
+      entropy -= pBroken * Math.log2(pBroken);
     }
-    if (pAnomaly > 0) {
-      entropy -= pAnomaly * Math.log2(pAnomaly);
+    if (pAnomalous > 0) {
+      entropy -= pAnomalous * Math.log2(pAnomalous);
     }
     
     return entropy;
@@ -300,18 +304,23 @@ export class Physics {
   static applyExternalField(nodes: Node[], field: ExternalField): void {
     for (const node of nodes) {
       switch (field.type) {
-        case 'energy':
-          node.energy += field.strength;
+        case 'energy': {
+          // Add energy by increasing E_asym (symmetry breaking)
+          const currentE0 = node.getTotalEnergy();
+          const boost = field.strength;
+          node.E_asym = Math.min(currentE0, node.E_asym + boost);
+          node.E_sym = currentE0 - node.E_asym;
           break;
+        }
         case 'phase':
           node.phase += field.strength;
           node.phase = node.phase % (2 * Math.PI);
           break;
         case 'symmetry':
           if (field.strength > 0.5) {
-            node.setState('symmetric');
+            node.setState('vacuum');
           } else if (field.strength < -0.5) {
-            node.setState('anomaly');
+            node.setState('anomalous');
           }
           break;
       }

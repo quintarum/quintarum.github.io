@@ -186,23 +186,23 @@ export class MetricsCollector {
     const currentTime = this.simulation.time;
     
     const energyMetrics: EnergyMetrics = {
-      total: stats.totalEnergy,
-      average: stats.avgEnergy,
-      max: stats.maxEnergy,
-      min: stats.minEnergy
+      total: stats.totalE_0,
+      average: stats.totalE_0 / stats.total,
+      max: stats.totalE_0 / stats.total, // Normalized per node
+      min: 0
     };
     
     const symmetryMetrics: SymmetryMetrics = {
-      ratio: stats.symmetric / stats.total,
-      symmetric: stats.symmetric,
-      asymmetric: stats.asymmetric,
-      anomalies: stats.anomalies
+      ratio: stats.vacuum / stats.total,
+      symmetric: stats.vacuum,
+      asymmetric: stats.broken,
+      anomalies: stats.anomalous
     };
     
     const entropy = Physics.calculateEntropy(lattice);
     const correlationLength = Physics.calculateCorrelationLength(lattice);
     const phaseCoherence = Physics.calculatePhaseCoherence(lattice.nodes);
-    const anomalyDensity = stats.anomalies / stats.total;
+    const anomalyDensity = stats.anomalous / stats.total;
     
     this.timeSeries.time.push(currentTime);
     this.timeSeries.energy.total.push(energyMetrics.total);
@@ -219,16 +219,16 @@ export class MetricsCollector {
     this.timeSeries.anomalyDensity.push(anomalyDensity);
     
     this._limitDataPoints();
-    this._updateStatistics(energyMetrics, symmetryMetrics, entropy, stats.anomalies);
+    this._updateStatistics(energyMetrics, symmetryMetrics, entropy, stats.anomalous);
     
     if (this.options.detectEvents) {
-      this._detectEvents(energyMetrics, symmetryMetrics, entropy, stats.anomalies);
+      this._detectEvents(energyMetrics, symmetryMetrics, entropy, stats.anomalous);
     }
     
     this.lastValues = {
       energy: energyMetrics.total,
       symmetryRatio: symmetryMetrics.ratio,
-      anomalyCount: stats.anomalies,
+      anomalyCount: stats.anomalous,
       entropy: entropy
     };
     

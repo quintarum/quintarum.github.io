@@ -221,8 +221,8 @@ export class Simulation {
       ...latticeStats,
       entropy,
       correlationLength,
-      symmetryRatio: latticeStats.symmetric / latticeStats.total,
-      anomalyDensity: latticeStats.anomalies / latticeStats.total
+      symmetryRatio: latticeStats.vacuum / latticeStats.total,
+      anomalyDensity: latticeStats.anomalous / latticeStats.total
     };
   }
 

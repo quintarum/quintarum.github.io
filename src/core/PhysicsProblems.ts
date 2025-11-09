@@ -329,7 +329,7 @@ export class PhysicsProblems {
   private _setupUniformLowSymmetry(lattice: Lattice): void {
     lattice.forEachNode(node => {
       if (Math.random() < 0.6) {
-        node.setState('asymmetric');
+        node.setState('broken');
       }
     });
   }
@@ -343,7 +343,7 @@ export class PhysicsProblems {
 
   private _setupSuperpositionState(lattice: Lattice): void {
     lattice.forEachNode(node => {
-      node.setState('symmetric');
+      node.setState('vacuum');
       node.phase = Math.random() * 2 * Math.PI;
     });
   }
@@ -358,11 +358,15 @@ export class PhysicsProblems {
       const distance = Math.sqrt(dx * dx + dy * dy);
       
       if (distance < 5) {
-        node.setState('anomaly');
-        node.energy = 10.0;
+        node.setState('anomalous');
+        // Set high E_asym for anomalous nodes
+        node.E_asym = 8.0;
+        node.E_sym = 2.0;
       } else if (distance < 10) {
-        node.setState('asymmetric');
-        node.energy = 5.0;
+        node.setState('broken');
+        // Set moderate E_asym for broken nodes
+        node.E_asym = 3.0;
+        node.E_sym = 7.0;
       }
     });
   }

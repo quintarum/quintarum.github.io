@@ -317,11 +317,11 @@ function setupControls(simulation: Simulation, renderer: Renderer2D, lattice: La
       time: state.time,
       stepCount: state.stepCount,
       statistics: {
-        symmetric: stats.symmetric,
-        asymmetric: stats.asymmetric,
-        anomalies: stats.anomalies,
+        symmetric: stats.vacuum,
+        asymmetric: stats.broken,
+        anomalies: stats.anomalous,
         total: stats.total,
-        avgEnergy: stats.avgEnergy,
+        avgEnergy: stats.totalE_0 / stats.total,
       },
     };
   };
@@ -392,9 +392,9 @@ function updateStats(lattice: Lattice, simulation: Simulation): void {
 
   const statsContent = document.getElementById('stats-content');
   if (statsContent) {
-    const symPercent = ((stats.symmetric / stats.total) * 100).toFixed(1);
-    const asymPercent = ((stats.asymmetric / stats.total) * 100).toFixed(1);
-    const anomPercent = ((stats.anomalies / stats.total) * 100).toFixed(1);
+    const symPercent = ((stats.vacuum / stats.total) * 100).toFixed(1);
+    const asymPercent = ((stats.broken / stats.total) * 100).toFixed(1);
+    const anomPercent = ((stats.anomalous / stats.total) * 100).toFixed(1);
     
     statsContent.innerHTML = `
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
@@ -404,7 +404,7 @@ function updateStats(lattice: Lattice, simulation: Simulation): void {
           <div style="margin-bottom: 8px;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
               <span>🟢 ${t('stats.symmetric')}</span>
-              <strong>${stats.symmetric} (${symPercent}%)</strong>
+              <strong>${stats.vacuum} (${symPercent}%)</strong>
             </div>
             <div style="background: #0f3460; height: 8px; border-radius: 4px; overflow: hidden;">
               <div style="background: #4CAF50; height: 100%; width: ${symPercent}%; transition: width 0.3s;"></div>
@@ -413,7 +413,7 @@ function updateStats(lattice: Lattice, simulation: Simulation): void {
           <div style="margin-bottom: 8px;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
               <span>🟡 ${t('stats.asymmetric')}</span>
-              <strong>${stats.asymmetric} (${asymPercent}%)</strong>
+              <strong>${stats.broken} (${asymPercent}%)</strong>
             </div>
             <div style="background: #0f3460; height: 8px; border-radius: 4px; overflow: hidden;">
               <div style="background: #FFC107; height: 100%; width: ${asymPercent}%; transition: width 0.3s;"></div>
@@ -422,7 +422,7 @@ function updateStats(lattice: Lattice, simulation: Simulation): void {
           <div style="margin-bottom: 8px;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
               <span>🔴 ${t('stats.anomalies')}</span>
-              <strong>${stats.anomalies} (${anomPercent}%)</strong>
+              <strong>${stats.anomalous} (${anomPercent}%)</strong>
             </div>
             <div style="background: #0f3460; height: 8px; border-radius: 4px; overflow: hidden;">
               <div style="background: #F44336; height: 100%; width: ${anomPercent}%; transition: width 0.3s;"></div>
@@ -430,7 +430,7 @@ function updateStats(lattice: Lattice, simulation: Simulation): void {
           </div>
         </div>
         <div style="grid-column: 1 / -1; margin-top: 10px; padding-top: 10px; border-top: 1px solid #0f3460;">
-          <strong>${t('stats.avgEnergy')}:</strong> ${stats.avgEnergy.toFixed(2)}
+          <strong>${t('stats.avgEnergy')}:</strong> ${(stats.totalE_0 / stats.total).toFixed(2)}
         </div>
       </div>
     `;
@@ -444,9 +444,9 @@ const chartHistory: Array<{ symmetric: number; asymmetric: number; anomalies: nu
 
 function updateChart(stats: LatticeStatistics): void {
   chartHistory.push({
-    symmetric: stats.symmetric,
-    asymmetric: stats.asymmetric,
-    anomalies: stats.anomalies
+    symmetric: stats.vacuum,
+    asymmetric: stats.broken,
+    anomalies: stats.anomalous
   });
   
   // Keep last 50 data points
