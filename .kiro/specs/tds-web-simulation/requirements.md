@@ -1,598 +1,311 @@
-```markdown
-# TDS Web Simulation – Combined Requirements, Design, and Implementation Document
+# Requirements Document
+
+## Scientific Rationale
+
+The Theory of Dynamic Symmetry (TDS) proposes a fundamental informational framework where physical phenomena emerge from reversible lattice dynamics rather than continuous fields. Unlike standard quantum field theory, TDS derives mass, charge, and geometric curvature from topological defects in a discrete informational structure. This simulation tool addresses a critical gap: the lack of computational platforms for exploring TDS predictions, validating conservation laws (E_sym + E_asym = E_0), and comparing TDS explanations of unsolved problems (dark matter, matter-antimatter asymmetry) against experimental data.
+
+This requirements document specifies a reproducible research software platform that enables:
+1. **Theoretical validation** - verification of TDS reversibility, energy conservation, and topological stability
+2. **Phenomenological exploration** - investigation of how TDS mechanisms explain observed physics
+3. **Educational dissemination** - accessible visualization of informational symmetry dynamics
+4. **Scientific reproducibility** - FAIR-compliant data export for peer review and replication
+
+The system is designed to meet standards for reproducible computational physics research, including standardized data formats (HDF5, NetCDF), semantic metadata (JSON-LD), and interoperability with analysis ecosystems (Python, MATLAB, ParaView).
 
 ## Introduction
 
-This document defines the **functional requirements**, **technical design**, and **AI implementation scheme** for the **Web Simulation of the Theory of Dynamic Symmetry (TDS)** — a theoretical framework describing reversible lattice dynamics, symmetry anomalies, and informational processes underlying the origin of matter and fields.  
-The goal is to enable both human developers and AI-assisted systems to construct, visualize, and analyze the reversible lattice model interactively.
-
----
+This document defines the functional requirements for the **Web Simulation of the Theory of Dynamic Symmetry (TDS)** — a theoretical framework describing reversible informational dynamics, symmetry transitions, and topological defects as the origin of matter and fields. TDS models the universe as a discrete informational lattice where physical phenomena emerge from symmetry configurations and their reversible evolution. The goal is to enable researchers, educators, and students to construct, visualize, and analyze the reversible lattice model interactively through a browser-based application.
 
 ## Glossary
 
-- **TDS (Theory of Dynamic Symmetry)** — theoretical model describing the origin of matter and fields through reversible informational dynamics.  
-- **Lattice (RSL)** — discrete informational structure representing quantized space within the TDS framework.  
-- **Symmetry Anomaly** — local deviation that disrupts perfect symmetry within the lattice.  
-- **Reversible Dynamics** — time-symmetric evolution allowing both forward and backward simulation.  
-- **Web Simulation** — browser-based interactive visualization of the TDS model.  
-- **GitHub Pages** — hosting platform for static web applications.  
-- **Interactive Tutorial** — guided walkthrough explaining theoretical and visual concepts.  
-- **Visual Analytics** — real-time graphical representation of symmetry, energy, and informational parameters.  
-
----
-
-# PART I — REQUIREMENTS DOCUMENT
-
-## System Architecture Overview
-
-**Frontend Stack (target):**  
-- Framework: **React** (Vite) or **Vue.js**  
-- Visualization: **Three.js** (3D), **Chart.js** or **D3.js** (analytics)  
-- Styling: **TailwindCSS** or **SCSS**  
-- State/Persistence: **React Context** or **Redux**, **LocalStorage/IndexedDB**  
-- Deployment: **GitHub Pages** (static)  
-- Offline Capability: **PWA**
-
-**Performance Targets:**  
-- Initial load time **≤ three seconds** on standard broadband  
-- Runtime **≥ sixty FPS** for lattices up to **100×100×100** on mid-range hardware  
-- Total bundle size **≤ ten megabytes**  
-- Analytics latency **≤ two hundred milliseconds**
-
----
+- **TDS_System**: The web-based simulation application implementing the Theory of Dynamic Symmetry
+- **Lattice**: A discrete informational structure representing quantized space, composed of cells with binary spin states (s_i ∈ {-1, +1})
+- **Vacuum_State**: The symmetric configuration where all neighboring cells satisfy s_i × s_j = +1, representing E_asym = 0 and maximum informational coherence
+- **Broken_State**: A configuration with local asymmetries where s_i × s_j = -1, storing asymmetric energy E_asym > 0
+- **Anomalous_State**: A persistent topological defect where local symmetry cannot be restored through reversible evolution, representing stable matter or charge
+- **Symmetry_Anomaly**: A stable configuration representing a topological defect in the informational fabric, the source of mass and charge in TDS
+- **Node**: An individual lattice cell with binary spin state s_i ∈ {-1, +1}, energy components (E_sym, E_asym), phase φ, and internal oscillation frequency ω₀
+- **E_sym**: Symmetric energy representing the degree of informational coherence in the lattice, where E_sym = E_0 when E_asym = 0
+- **E_asym**: Asymmetric energy representing local symmetry breaking and informational tension
+- **E_0**: Total conserved energy where E_sym + E_asym = E_0 (fundamental conservation law), representing the non-zero vacuum energy
+- **T_info**: Informational tension calculated as J × Σ(1 - s_i × s_j), analogous to potential energy
+- **ω₀**: Internal oscillation frequency of a Node, where mass emerges as M = ℏω₀ for persistent Anomalous_State defects
+- **Informational_Scale**: The hierarchical level of lattice resolution, where different scales have distinct reversibility properties and coupling strengths
+- **Reversible_Dynamics**: Time-symmetric evolution where dE_sym/dt = -dE_asym/dt, allowing both forward and backward simulation
+- **User**: Any person interacting with the TDS_System (researcher, educator, or student)
+- **Simulation_State**: The complete configuration of the lattice at a specific point in time
+- **Control_Panel**: The user interface component for adjusting simulation parameters
+- **Analytics_Dashboard**: The user interface component displaying real-time metrics and charts
+- **HDF5**: Hierarchical Data Format version 5, a scientific data format for storing multi-dimensional arrays and metadata
+- **FAIR_Principles**: Findable, Accessible, Interoperable, Reusable - standards for scientific data management and stewardship
+- **JSON-LD**: JSON for Linked Data, a format for expressing semantic metadata with ontological definitions
+- **DOI**: Digital Object Identifier, a persistent identifier for scientific datasets and publications
+- **ORCID**: Open Researcher and Contributor ID, a unique identifier for researchers
+- **Zenodo**: A general-purpose open-access repository for research data operated by CERN
+- **Validation_Suite**: A collection of automated tests verifying TDS conservation laws and model consistency
+- **Benchmark_Scenario**: A reference simulation configuration with known expected behavior for validation purposes
 
 ## Requirements
 
-### Requirement 1 — Lattice Visualization  
-**Priority:** High  
-
-**User Story:**  
-As a researcher, I want to see a clear and intuitive visualization of the TDS lattice, so that I can immediately understand its spatial structure without technical knowledge.
-
-**Acceptance Criteria**  
-1. WHEN the user opens the simulation, THE Web Simulation SHALL display a visually appealing 2D or 3D lattice with distinct node representation.  
-2. THE Web Simulation SHALL use intuitive visual metaphors (e.g., glowing nodes, pulsing animations) to represent different symmetry states.  
-3. THE Web Simulation SHALL allow smooth transitions between 2D and 3D views.  
-4. THE Web Simulation SHALL allow resizing of the lattice with immediate visual feedback.  
-5. IN 3D mode, intuitive camera controls and on-screen navigation instructions SHALL be provided.  
-6. A minimap SHALL display the overall lattice overview.  
-7. Regions of interest SHALL be automatically highlighted.
-
----
-
-### Requirement 2 — Symmetry Dynamics  
-**Priority:** High  
-
-**User Story:**  
-As a user, I want to observe symmetry dynamics with clear visual indicators, so that I can intuitively understand how states evolve in the TDS model.
-
-**Acceptance Criteria**  
-1. THE Web Simulation SHALL animate state changes smoothly and continuously.  
-2. A distinct, scientifically consistent color palette SHALL represent different states.  
-3. THE Web Simulation SHALL provide large, accessible controls for play, pause, and speed adjustment.  
-4. A progress indicator SHALL show the current simulation step.  
-5. Animation speed changes SHALL apply smoothly.  
-6. Particle trails or flow lines SHALL visualize state propagation.  
-7. Slow-motion and fast-forward modes SHALL be available for detailed observation.
-
----
-
-### Requirement 3 — Symmetry Anomalies  
-**Priority:** High  
-
-**User Story:**  
-As a researcher, I want to visualize and interact with symmetry anomalies to study their propagation and effects on the lattice.
-
-**Acceptance Criteria**  
-1. Symmetry anomalies SHALL be represented with distinctive effects (ripples, halos, gradients).  
-2. Propagation events SHALL display wave-like animations.  
-3. Users SHALL be able to create anomalies interactively by clicking on nodes.  
-4. Real-time counters and charts SHALL track anomaly statistics.  
-5. In analysis mode, detailed anomaly graphs SHALL be available.  
-6. Preset anomaly scenarios SHALL exist for demonstration purposes.  
-7. Users SHALL be able to save and share anomaly configurations.
-
----
-
-### Requirement 4 — Control Panel  
-**Priority:** High  
-
-**User Story:**  
-As a user, I want an intuitive control panel with clear labeling and responsive feedback to adjust simulation parameters easily.
-
-**Acceptance Criteria**  
-1. The control panel SHALL group parameters logically with descriptive labels.  
-2. Sliders with live visual previews SHALL be used for parameter changes.  
-3. Changes SHALL preview before applying to the main simulation.  
-4. User settings SHALL be saved automatically with a “Restore Defaults” option.  
-5. Presets (e.g., *High Symmetry*, *Chaotic*, *Stable*) SHALL be included.  
-6. Each parameter SHALL include a tooltip or “What does this do?” explanation.  
-7. Recommended parameter ranges SHALL be indicated visually.  
-8. Keyboard shortcuts SHALL be supported for frequent actions.  
-9. Configurations SHALL be exportable/importable via JSON.
-
----
-
-### Requirement 5 — Theoretical Context & Learning  
-**Priority:** Medium  
-
-**User Story:**  
-As a researcher, I want accessible theoretical explanations so that I can grasp TDS principles without a deep physics background.
-
-**Acceptance Criteria**  
-1. An interactive tutorial SHALL explain core TDS concepts on first launch.  
-2. Tooltips SHALL provide short contextual definitions for UI elements.  
-3. A visual legend SHALL define colors, states, and parameters.  
-4. The help section SHALL include diagrams and examples.  
-5. Links to theory papers and abstracts SHALL be available.  
-6. A searchable glossary SHALL be accessible from all screens.  
-7. Real-time annotations SHALL describe ongoing processes.  
-8. Optional video or animated tutorials SHALL explain complex topics.  
-9. A “Beginner/Expert Mode” toggle SHALL adjust the level of information detail.  
-10. A built-in notes section SHALL allow users to record and export observations.
-
----
-
-### Requirement 6 — Deployment & Performance  
-**Priority:** High  
-
-**User Story:**  
-As a developer, I want to deploy the simulation efficiently on GitHub Pages while ensuring optimal performance across devices.
-
-**Acceptance Criteria**  
-1. The app SHALL be implemented as a static web application with PWA support.  
-2. The app SHALL work offline after first load.  
-3. The interface SHALL adapt responsively to desktop, tablet, and mobile screens.  
-4. The app SHALL load fully in ≤ three seconds on a standard connection.  
-5. Compatibility SHALL be ensured for Chrome, Firefox, Safari, and Edge.  
-6. The simulation SHALL maintain ≥ sixty FPS for moderate lattice sizes.  
-7. A print-friendly documentation view SHALL be provided.  
-8. Simulation states SHALL be shareable via URL parameters.  
-9. Total build size SHALL not exceed ten megabytes.
-
----
-
-### Requirement 7 — Reversible Dynamics  
-**Priority:** Medium  
-
-**User Story:**  
-As a user, I want to explore reversible time evolution to understand the temporal symmetry of TDS.
-
-**Acceptance Criteria**  
-1. Playback controls SHALL include play, reverse, pause, and step.  
-2. Reverse playback SHALL animate past states smoothly.  
-3. A timeline scrubber SHALL allow navigation to any history point.  
-4. Time direction SHALL be visually indicated (e.g., arrows or gradient motion).  
-5. History depth SHALL be user-configurable with delta-compression for memory efficiency.  
-6. Users SHALL be able to bookmark specific time states.  
-7. A comparison view SHALL display before/after states side-by-side.
-
----
-
-### Requirement 8 — Real-Time Analytics  
-**Priority:** Medium  
-
-**User Story:**  
-As a researcher, I want real-time quantitative data from the simulation to analyze energy and symmetry relations.
-
-**Acceptance Criteria**  
-1. Graphs SHALL show energy distribution, symmetry ratios, and entropy over time.  
-2. Analytics SHALL maintain ≤ two hundred milliseconds update latency.  
-3. Statistical summaries (mean, variance, extremes) SHALL be displayed.  
-4. Export to CSV SHALL be supported.  
-5. Detailed correlation and phase diagrams SHALL be available in advanced mode.  
-6. Users SHALL customize dashboard layouts.  
-7. Statistically significant events SHALL be highlighted automatically.
-
----
-
-### Requirement 9 — Educational Mode  
-**Priority:** Low  
-
-**User Story:**  
-As an educator, I want an educational mode to demonstrate TDS to students interactively.
-
-**Acceptance Criteria**  
-1. Presentation mode SHALL support fullscreen, distraction-free visualization.  
-2. Educational presets SHALL include explanations and narration text.  
-3. Teachers SHALL create and save custom lesson plans.  
-4. Guided tours SHALL explain key concepts step-by-step.  
-5. Interactive quizzes SHALL test comprehension.  
-6. Multiple language support (English, Russian minimum) SHALL be available.  
-7. Printable worksheets and exercises SHALL be included.
-
----
-
-### Requirement 10 — Simulation Comparison  
-**Priority:** Medium  
-
-**User Story:**  
-As a user, I want to compare different simulation runs to evaluate how parameter changes affect results.
-
-**Acceptance Criteria**  
-1. Users SHALL save simulation snapshots for comparison.  
-2. Comparison mode SHALL display differences visually (e.g., side-by-side or delta maps).  
-3. Reports SHALL summarize key variations.  
-4. Parameter sensitivity SHALL be visualized with interactive charts.  
-5. Multi-simulation split view MAY be implemented in later phases.
-
----
-
-### Requirement 11 — Physics Validation  
-**Priority:** Low  
-
-**User Story:**  
-As a physicist, I want to explore how TDS can address unsolved physics problems, to evaluate its potential advantages.
-
-**Acceptance Criteria**  
-1. The simulation SHALL include a “Physics Problems” section referencing known issues.  
-2. Pre-configured test scenarios SHALL include:
-   - Dark matter and dark energy  
-   - Matter–antimatter asymmetry  
-   - Quantum measurement paradox  
-   - Information paradox in black holes  
-   - Hierarchy problem  
-3. Each scenario SHALL include appropriate parameters and initial states.  
-4. The simulation SHALL display comparisons between TDS and Standard Model behavior.  
-5. Quantitative metrics and experimental overlays SHALL be shown when data exists.  
-6. Detailed theoretical explanations SHALL accompany each scenario.  
-7. Users SHALL be able to define and run custom problem tests.  
-8. Reports SHALL summarize where TDS matches or diverges from standard predictions.  
-9. References to peer-reviewed literature SHALL be provided.
-
----
-
-## Implementation Roadmap
-
-**Phase 1 – Core Visualization (Months 1–2)**  
-- Implement Requirements **1–4**, partial **5** and **6**  
-- Basic **2D/3D lattice** with anomaly interactions
-
-**Phase 2 – Reversibility & Analytics (Months 3–4)**  
-- Implement Requirements **7–8**  
-- Add time control, reversible playback, and core metrics
-
-**Phase 3 – Education & Comparison Modes (Month 5)**  
-- Implement Requirements **9–10**
-
-**Phase 4 – Physics Validation & Research Integration (Month 6+)**  
-- Implement Requirement **11**  
-- Connect with external research data sources
-```
-```markdown
-# PART II — SYSTEM DESIGN DOCUMENT (Technical Overview)
-
-## Purpose
-Define the technical architecture and implementation strategy for the TDS Web Simulation, aligning development with functional goals from Part I.
-
-## High-Level Architecture
-
-**Client-Side Application:**  
-A modular **React-based PWA** that renders **2D/3D lattice** simulations using **WebGL via Three.js**, and overlays analytic data visualizations using **Chart.js** or **D3.js**.
-
-**Key Modules:**  
-1. **Core Engine (RSL Engine):**  
-   - Simulates reversible lattice dynamics according to TDS rules.  
-   - Handles symmetry energy, anomaly propagation, and invariants.  
-   - Supports reversible state transitions (**B** and **B⁻¹**).  
-
-2. **Visualization Layer:**  
-   - Renders lattice as 2D/3D grid (points or instanced cubes).  
-   - Applies real-time color and motion cues for state changes.  
-   - Supports camera control, zoom, and minimap.
-
-3. **Control Panel Module:**  
-   - React component with sliders, toggles, and presets.  
-   - Connects to engine state via React Context/Redux.  
-   - Saves settings; exposes “Restore Defaults”.
-
-4. **Analytics Module:**  
-   - Displays live charts of **E_sym**, **E_asym**, **E_0**, symmetry ratios, entropy.  
-   - Provides exportable CSV data and customizable dashboards.  
-   - Highlights significant events.
-
-5. **Tutorial & Help System:**  
-   - Onboarding tutorial with animations and contextual tips.  
-   - Glossary with search; links to theory papers.
-
-6. **Persistence Layer:**  
-   - LocalStorage/IndexedDB for session data, presets, snapshots.  
-   - Import/export JSON; share state via URL params.
-
-## Data Flow
-
-1. User interacts with UI →  
-2. Control panel dispatches action to Simulation Engine →  
-3. Engine updates lattice state →  
-4. Visualization renders next frame →  
-5. Analytics receives updated streams →  
-6. Dashboard visualizes metrics and trends.
-
-Communication: React hooks + lightweight pub/sub (or Redux actions) to decouple modules.
-
-## Component Structure (React Example)
-
-- `App` — root bootstrap, routing, and global providers.  
-- `LatticeView` — 2D/3D WebGL renderer (Three.js).  
-- `ControlPanel` — parameters, presets, tooltips.  
-- `AnalyticsPanel` — charts and statistics (Chart.js/D3.js).  
-- `StatusBar` — time step, FPS, anomaly counters.  
-- `Timeline` — scrubber, bookmarks, reverse/step controls.  
-- `TutorialOverlay` — onboarding and help UI.  
-- `GlossaryModal` — searchable glossary.  
-- `DataStore` — Context/Redux store and selectors.  
-- `FileManager` — import/export, snapshots, URL-state.
+### Requirement 1: Lattice Visualization
 
-## Future Extensions
+**User Story:** As a researcher, I want to see a clear and intuitive visualization of the TDS lattice with its three fundamental symmetry states and multi-scale structure, so that I can immediately understand the informational structure and symmetry dynamics without requiring deep technical knowledge.
 
-- **WebAssembly** backend for faster lattice computations.  
-- **WebGPU** path for GPU-accelerated update kernels.  
-- Research datasets integration for **Physics Validation** mode.  
-- Cloud sharing of configurations and snapshots.
+#### Acceptance Criteria
 
----
-```
-````markdown
-# PART III — IMPLEMENTATION SCHEME FOR AI-ASSISTED DEVELOPMENT
+1. WHEN the User opens THE TDS_System, THE TDS_System SHALL display a lattice with distinct visual representation of each Node showing its symmetry state
+2. THE TDS_System SHALL render the Lattice in either two-dimensional or three-dimensional view mode
+3. WHEN the User selects a view mode, THE TDS_System SHALL transition between two-dimensional and three-dimensional views within five hundred milliseconds
+4. WHILE in three-dimensional mode, THE TDS_System SHALL provide camera controls allowing rotation, zoom, and pan operations
+5. THE TDS_System SHALL use three distinct colors to represent Vacuum_State, Broken_State, and Anomalous_State
+6. THE TDS_System SHALL display Node energy components E_sym and E_asym through visual properties such as brightness or glow intensity
+7. WHERE a Node is in Anomalous_State, THE TDS_System SHALL visualize its internal oscillation frequency ω₀ through pulsation or animation effects
+8. THE TDS_System SHALL allow Users to switch between different Informational_Scale levels to observe hierarchical lattice structure
+9. WHEN the User resizes the browser window, THE TDS_System SHALL adapt the visualization within two hundred milliseconds
 
-## Purpose
-A deterministic **step-by-step execution plan** for an AI development system (or developers) to build the TDS Web Simulation.  
-Each step defines created files, module interfaces, dependencies, and success criteria.
+### Requirement 2: Symmetry Dynamics Animation
 
----
+**User Story:** As a user, I want to observe reversible symmetry dynamics with clear visual indicators showing energy redistribution between E_sym and E_asym, so that I can intuitively understand how informational states evolve in the TDS model.
 
-### Step 1 — Project Initialization
+#### Acceptance Criteria
 
-**Goal:** Bootstrap the project.
+1. WHEN the simulation is running, THE TDS_System SHALL animate Node symmetry state transitions with smooth visual transitions
+2. THE TDS_System SHALL maintain a frame rate of at least sixty frames per second for lattices up to one hundred by one hundred Nodes
+3. THE TDS_System SHALL provide playback controls including play, pause, and speed adjustment
+4. WHEN the User adjusts simulation speed, THE TDS_System SHALL apply the new speed within one hundred milliseconds
+5. THE TDS_System SHALL display a progress indicator showing the current simulation step number
+6. THE TDS_System SHALL visualize the conservation law E_sym + E_asym = E_0 through real-time energy distribution displays
+7. WHEN symmetry transitions occur, THE TDS_System SHALL show the energy redistribution satisfying dE_sym/dt = -dE_asym/dt
+
+### Requirement 3: Symmetry Anomaly Interaction
 
-**Actions:**  
-1. Initialize project folder `tds-web-simulation`.  
-2. Scaffold React app via **Vite** (recommended) or Vue.  
-3. Create folders:
-   - `/core` — lattice computation logic  
-   - `/render` — WebGL/Three.js visualization  
-   - `/ui` — control panels, overlays, timeline  
-   - `/data` — presets, examples  
-   - `/assets` — icons, styles, shaders  
-   - `/utils` — math helpers, export  
-4. Add TailwindCSS (or SCSS), ESLint, Prettier.  
-5. Add **PWA** manifest & service worker.  
-6. Generate `index.html` with meta and mount node.
+**User Story:** As a researcher, I want to visualize and interact with symmetry anomalies as topological defects to study their stability, internal oscillation frequency ω₀, and role as sources of mass and charge in the TDS framework.
 
-**Success:** App builds and serves; placeholder “TDS Simulation Prototype v0.1” renders.
+#### Acceptance Criteria
 
----
+1. THE TDS_System SHALL render Nodes in Anomalous_State with distinctive visual effects indicating persistent topological defects
+2. WHEN a Symmetry_Anomaly forms, THE TDS_System SHALL display its stability by showing that it persists through reversible evolution cycles
+3. WHEN the User clicks on a Node, THE TDS_System SHALL create a local symmetry breaking that may evolve into a Symmetry_Anomaly
+4. THE TDS_System SHALL display a real-time counter showing the total number of stable Symmetry_Anomaly instances
+5. THE TDS_System SHALL visualize the informational tension T_info = J × Σ(1 - s_i × s_j) around anomalies through gradient effects
+6. THE TDS_System SHALL display the internal oscillation frequency ω₀ for each Anomalous_State Node and calculate its effective mass M = ℏω₀
+7. THE TDS_System SHALL allow Users to adjust the oscillation frequency ω₀ of anomalies and observe how it affects their mass and stability
+8. THE TDS_System SHALL provide preset scenarios demonstrating different Symmetry_Anomaly configurations including single defects, defect pairs, and multi-scale structures
+9. THE TDS_System SHALL distinguish between transient Broken_State configurations and persistent Anomalous_State defects
 
-### Step 2 — Core Engine Development
+### Requirement 4: Parameter Control Interface
 
-**Goal:** Implement **Reversible Symmetry Lattice (RSL)** kernel.
+**User Story:** As a user, I want an intuitive control panel with clear labeling and responsive feedback to adjust TDS simulation parameters including coupling strength J, lattice dimensions, and evolution time step.
 
-**Create:** `core/rsl_engine.js`
+#### Acceptance Criteria
 
-**Implement:**  
-- Lattice state with binary spins `s_i ∈ {−1,+1}`:
-  ```js
-  export function initLattice(nx, ny, nz, seed = 1) { /* allocate Int8Array, set initial state */ }
-  export function getStateRef() { /* return typed array reference */ }
-````
+1. THE TDS_System SHALL provide a Control_Panel with labeled controls for TDS parameters including coupling strength J, lattice size, and time step
+2. WHEN the User adjusts a parameter, THE TDS_System SHALL apply the change to the simulation within two hundred milliseconds
+3. THE TDS_System SHALL save User parameter settings to browser local storage automatically
+4. THE TDS_System SHALL provide a restore defaults button that resets all parameters to initial values
+5. THE TDS_System SHALL include at least three preset configurations representing different physical scenarios such as vacuum equilibrium, wave propagation, and defect formation
+6. WHEN the User hovers over a parameter control, THE TDS_System SHALL display a tooltip explaining the parameter in TDS context within three hundred milliseconds
+7. THE TDS_System SHALL support keyboard shortcuts for play, pause, step forward, and step backward operations
+8. THE TDS_System SHALL allow Users to export current parameter configuration as a JSON or JSON-LD file with TDS ontology
+9. WHEN the User imports a configuration file in JSON, HDF5, or NetCDF format, THE TDS_System SHALL validate and apply the parameters within five hundred milliseconds
+10. THE TDS_System SHALL display the current values of E_sym, E_asym, E_0, and T_info in the Control_Panel
+11. THE TDS_System SHALL allow Users to load initial lattice states from HDF5, NumPy, or MATLAB files for reproducibility
 
-* Reversible update operator **B** and its inverse **B⁻¹**:
+### Requirement 5: Educational Content Integration
 
-  ```js
-  export function stepForward() { /* S_{t+1} = B S_t */ }
-  export function stepBackward() { /* S_{t-1} = B^{-1} S_t */ }
-  ```
-* Energy metrics & invariants:
+**User Story:** As a researcher, I want accessible theoretical explanations of TDS concepts including symmetry states, energy conservation, topological defects, and informational dynamics, so that I can grasp TDS principles without requiring a deep physics background.
 
-  ```js
-  export function computeMetrics() {
-    return { E_sym, E_asym, E0: E_sym + E_asym, symRatio /* etc. */ };
-  }
-  ```
-* Determinism: pure functions, seeded RNG for stochastic parts.
+#### Acceptance Criteria
 
-**Success:** Engine steps forward/backward; metrics computed per tick; invariants tracked.
+1. WHEN the User launches THE TDS_System for the first time, THE TDS_System SHALL display an interactive tutorial explaining core TDS concepts including Vacuum_State as a non-zero energy state with E_sym = E_0, Broken_State, Anomalous_State, and the conservation law E_sym + E_asym = E_0
+2. THE TDS_System SHALL provide tooltips for all user interface elements explaining their function in TDS context
+3. THE TDS_System SHALL include a visual legend defining the meaning of colors representing Vacuum_State, Broken_State, and Anomalous_State
+4. THE TDS_System SHALL provide a help section containing diagrams explaining symmetry transitions, topological defects, and the relationship between TDS and physical observables
+5. THE TDS_System SHALL include links to TDS theory papers including Core Law of TDS, Symmetry Anomalies framework, and TDS Manifest
+6. THE TDS_System SHALL provide a searchable glossary accessible from all screens with TDS-specific terms
+7. WHERE the User enables expert mode, THE TDS_System SHALL display additional technical details including mathematical formulations of T_info, g_ij^(info), and reversibility conditions
+8. THE TDS_System SHALL explain how TDS constants (c, ℏ, G, α) emerge as stable ratios in the reversible lattice rather than fundamental constants
+9. THE TDS_System SHALL provide examples showing how photons emerge as perfectly reversible cycles and mass emerges as persistent topological defects with M = ℏω₀
+10. THE TDS_System SHALL explain that Vacuum_State is not empty space but a perfectly balanced informational state with maximum reversibility and energy E_sym = E_0
 
----
+### Requirement 6: Performance and Deployment
 
-### Step 3 — Visualization Setup
+**User Story:** As a developer, I want to deploy the simulation efficiently on GitHub Pages while ensuring optimal performance across devices.
 
-**Goal:** Render lattice in 2D/3D.
+#### Acceptance Criteria
 
-**Create:** `render/lattice_view.js`
+1. THE TDS_System SHALL load completely within three seconds on a connection with ten megabits per second bandwidth
+2. THE TDS_System SHALL function offline after the initial load
+3. THE TDS_System SHALL adapt its interface responsively to desktop, tablet, and mobile screen sizes
+4. THE TDS_System SHALL be compatible with Chrome, Firefox, Safari, and Edge browsers in their current versions
+5. THE TDS_System SHALL maintain at least sixty frames per second for lattices up to fifty by fifty Nodes on mid-range hardware
+6. THE TDS_System SHALL have a total bundle size not exceeding ten megabytes
+7. THE TDS_System SHALL encode Simulation_State in URL parameters allowing Users to share specific configurations
 
-**Implement:**
+### Requirement 7: Time Reversibility
 
-* Three.js scene, camera, renderer, orbit controls.
-* 3D: `THREE.InstancedMesh` cubes or `THREE.Points` for performance.
-* 2D mode toggle (orthographic projection or dedicated 2D canvas).
-* Color mapping: `+1` / `−1` states → distinct palette.
-* Resize handling; basic minimap (optional for MVP).
+**User Story:** As a user, I want to explore reversible time evolution demonstrating the fundamental TDS principle that dE_sym/dt = -dE_asym/dt, so that I can verify energy conservation and understand temporal symmetry.
 
-**Success:** Interactive lattice visible; updates on each simulation tick.
+#### Acceptance Criteria
 
----
+1. THE TDS_System SHALL provide playback controls including forward, reverse, pause, and single-step operations
+2. WHEN the User activates reverse playback, THE TDS_System SHALL animate previous Simulation_State instances smoothly while maintaining energy conservation
+3. THE TDS_System SHALL provide a timeline scrubber allowing navigation to any point in simulation history
+4. THE TDS_System SHALL indicate time direction visually during forward and reverse playback
+5. THE TDS_System SHALL allow Users to configure the maximum history depth
+6. THE TDS_System SHALL allow Users to bookmark specific Simulation_State instances for later review
+7. THE TDS_System SHALL provide a comparison view displaying two Simulation_State instances side by side
+8. THE TDS_System SHALL verify and display reversibility metrics showing energy conservation E_sym + E_asym = E_0 throughout time evolution
+9. THE TDS_System SHALL highlight any violations of reversibility where energy conservation is broken
 
-### Step 4 — Control Panel (UI)
+### Requirement 8: Real-Time Analytics
 
-**Goal:** Control simulation parameters.
+**User Story:** As a researcher, I want real-time quantitative data from the simulation to analyze TDS energy components E_sym and E_asym, informational tension T_info, and verify conservation laws.
 
-**Create:** `ui/control_panel.jsx`, `ui/status_bar.jsx`
+#### Acceptance Criteria
 
-**Implement:**
+1. THE TDS_System SHALL display an Analytics_Dashboard showing E_sym, E_asym, E_0, and T_info over time
+2. THE TDS_System SHALL update Analytics_Dashboard visualizations within two hundred milliseconds of simulation state changes
+3. THE TDS_System SHALL display the ratio of Vacuum_State, Broken_State, and Anomalous_State Nodes over time
+4. THE TDS_System SHALL verify and display the conservation law E_sym + E_asym = E_0 with deviation metrics
+5. THE TDS_System SHALL calculate and display informational tension T_info = J × Σ(1 - s_i × s_j) for the entire lattice
+6. THE TDS_System SHALL allow Users to export analytics data including all TDS metrics to CSV, Parquet, HDF5, or NetCDF formats
+7. WHERE the User enables advanced mode, THE TDS_System SHALL display correlation length, phase coherence, and topological defect density
+8. THE TDS_System SHALL allow Users to customize Analytics_Dashboard layout and visible metrics
+9. WHEN energy conservation is violated beyond a threshold, THE TDS_System SHALL highlight the violation in the Analytics_Dashboard
+10. THE TDS_System SHALL display the rate of symmetry transitions dE_sym/dt and dE_asym/dt
 
-* Buttons: **Play**, **Pause**, **Reverse**, **Step**.
-* Sliders: lattice size, tick rate, anomaly probability.
-* Presets: **Stable**, **Chaotic**, **High Symmetry**.
-* Tooltips and labels with brief explanations.
-* Connect to engine via React Context/Redux.
-* Save preferences in LocalStorage.
+### Requirement 9: Educational Mode
 
-**Success:** Controls modify behavior in real time; settings persist.
+**User Story:** As an educator, I want an educational mode to demonstrate TDS to students interactively.
 
----
+#### Acceptance Criteria
 
-### Step 5 — Symmetry Anomaly Module
+1. THE TDS_System SHALL provide a presentation mode with fullscreen visualization
+2. THE TDS_System SHALL include educational preset scenarios with explanatory text
+3. THE TDS_System SHALL allow educators to create and save custom lesson plans
+4. THE TDS_System SHALL provide guided tours explaining key concepts step by step
+5. THE TDS_System SHALL include interactive quizzes testing comprehension of TDS concepts
+6. THE TDS_System SHALL support English and Russian languages as a minimum
+7. THE TDS_System SHALL provide printable worksheets and exercises
 
-**Goal:** Create and visualize anomalies.
+### Requirement 10: Simulation Comparison
 
-**Create:**
+**User Story:** As a user, I want to compare different simulation runs to evaluate how parameter changes affect results.
 
-* `core/anomalies.js` — `injectAnomaly(x,y,z)`, propagation rules.
-* `render/anomaly_effects.js` — ripples/halos.
-* `ui/anomaly_counter.jsx` — live stats.
+#### Acceptance Criteria
 
-**Implement:**
+1. THE TDS_System SHALL allow Users to save Simulation_State snapshots with descriptive labels
+2. THE TDS_System SHALL provide a comparison mode displaying two simulations side by side
+3. THE TDS_System SHALL generate reports summarizing key differences between compared simulations
+4. THE TDS_System SHALL visualize parameter sensitivity with interactive charts
+5. THE TDS_System SHALL highlight visual differences between compared Simulation_State instances
 
-* Click-to-inject on lattice nodes.
-* Visual wavefront propagation.
-* Counters and simple chart of anomaly counts.
+### Requirement 11: Multi-Scale Informational Hierarchy
 
-**Success:** User clicks create visible anomalies; counters update live.
+**User Story:** As a researcher, I want to explore different informational scales of the lattice to understand how reversibility and coupling properties vary across hierarchical levels in TDS.
 
----
+#### Acceptance Criteria
 
-### Step 6 — Reversibility & Timeline
+1. THE TDS_System SHALL support at least three distinct Informational_Scale levels representing different resolutions of the lattice
+2. WHEN the User switches between Informational_Scale levels, THE TDS_System SHALL adjust the visualization to show the appropriate level of detail within one second
+3. THE TDS_System SHALL display how coupling strength J varies across different Informational_Scale levels
+4. THE TDS_System SHALL show that reversibility properties differ at different scales with finer scales having faster oscillation frequencies
+5. WHERE the User enables multi-scale view, THE TDS_System SHALL display multiple scale levels simultaneously in separate panels or overlays
+6. THE TDS_System SHALL allow Users to create Symmetry_Anomaly instances at specific Informational_Scale levels
+7. THE TDS_System SHALL demonstrate how structures at one scale influence dynamics at adjacent scales
 
-**Goal:** Reversible playback with history.
+### Requirement 12: Scientific Data Export and Interoperability
 
-**Create:**
+**User Story:** As a researcher, I want to export simulation data in standard scientific formats with complete metadata, so that I can analyze TDS results using external tools like Python, MATLAB, ParaView, and publish reproducible datasets.
 
-* `core/history_buffer.js` — delta storage (bitmasks or run-length).
-* `ui/timeline.jsx` — scrubber, bookmarks.
+#### Acceptance Criteria
 
-**Implement:**
+1. THE TDS_System SHALL support multiple export levels: quick export (CSV/JSON), research export (HDF5/Zarr), publication export (NetCDF with metadata), and visualization export (VTK/GLTF)
+2. WHEN the User exports to HDF5 format, THE TDS_System SHALL organize data into hierarchical groups including /lattice (spin states), /energy (E_sym, E_asym, E_0, T_info), /anomalies (positions, ω₀, masses), /geometry (g_ij^info, curvature), and /metadata (parameters, timestamps, version)
+3. THE TDS_System SHALL export lattice state arrays in formats compatible with NumPy (.npy/.npz), MATLAB (.mat), and Parquet for tabular data
+4. THE TDS_System SHALL include complete metadata following Dublin Core or DataCite schema including simulation parameters, TDS version, author information, ORCID identifiers, timestamps, and DOI if published
+5. WHERE the User exports for visualization, THE TDS_System SHALL generate VTK or GLTF files containing three-dimensional lattice geometry with color-coded symmetry states
+6. THE TDS_System SHALL support JSON-LD export with TDS ontology defining terms like E_sym, E_asym, Symmetry_Anomaly with semantic types
+7. THE TDS_System SHALL allow Users to export time series data of E_sym, E_asym, T_info, and anomaly counts in CSV or Parquet format for analysis in Pandas or R
+8. THE TDS_System SHALL generate FAIR-compliant exports (Findable, Accessible, Interoperable, Reusable) suitable for scientific repositories like Zenodo or Figshare
+9. WHEN exporting multi-scale data, THE TDS_System SHALL preserve the hierarchical structure across Informational_Scale levels in the output format
 
-* `saveDelta(S_t, S_{t+1})`, `restorePreviousState()`.
-* Smooth reverse animation.
-* History depth limit (user-configurable).
+### Requirement 13: Model Validation and Consistency Testing
 
-**Success:** Forward/backward playback works; scrubbing navigates state history.
+**User Story:** As a researcher, I want automated validation of TDS conservation laws and reversibility properties to ensure the simulation accurately implements the theoretical framework and produces scientifically reliable results.
 
----
+#### Acceptance Criteria
 
-### Step 7 — Analytics & Graphs
+1. THE TDS_System SHALL include a validation suite that automatically tests energy conservation E_sym + E_asym = E_0 with configurable tolerance thresholds
+2. THE TDS_System SHALL verify reversibility by running forward-backward cycles and measuring state deviation with quantitative metrics
+3. WHEN energy conservation is violated beyond the threshold, THE TDS_System SHALL log the violation with timestamp, lattice state, and deviation magnitude
+4. THE TDS_System SHALL provide reference benchmark scenarios including photon mode (perfectly reversible cycle), stable defect (persistent anomaly), and phase transition (symmetry breaking cascade)
+5. THE TDS_System SHALL allow Users to run the validation suite on demand and export validation reports in JSON or HDF5 format
+6. THE TDS_System SHALL calculate and display consistency metrics including energy drift rate, reversibility score, and topological charge conservation
+7. WHERE the User enables continuous validation mode, THE TDS_System SHALL monitor conservation laws in real-time and alert on violations
+8. THE TDS_System SHALL provide unit tests for core TDS operations including symmetry transitions, anomaly formation, and informational tension calculation
+9. THE TDS_System SHALL include regression tests comparing current simulation results against validated reference datasets
 
-**Goal:** Real-time metrics visualization.
+### Requirement 14: Python and Jupyter Integration
 
-**Create:**
+**User Story:** As a computational researcher, I want to programmatically control the TDS simulation and analyze results in Jupyter notebooks, so that I can integrate TDS exploration into my existing scientific workflow.
 
-* `ui/analytics_panel.jsx`
-* `utils/export_csv.js`
-* `utils/metrics_helpers.js`
+#### Acceptance Criteria
 
-**Implement:**
+1. THE TDS_System SHALL provide a Python client library allowing programmatic control of simulation parameters, execution, and data retrieval
+2. THE TDS_System SHALL support loading and saving simulation states directly from Python using NumPy arrays or HDF5 files
+3. THE TDS_System SHALL provide Jupyter notebook examples demonstrating common workflows including parameter sweeps, anomaly analysis, and energy conservation verification
+4. THE TDS_System SHALL expose a REST API or WebSocket interface allowing external tools to control the simulation and retrieve real-time data
+5. THE TDS_System SHALL provide Python functions for reading exported HDF5 files with automatic parsing of /lattice, /energy, /anomalies, and /geometry groups
+6. THE TDS_System SHALL include example notebooks showing how to reproduce physics problem scenarios and compare results with experimental data
+7. WHERE the User runs the simulation from Python, THE TDS_System SHALL return results as structured data (dictionaries, NumPy arrays, Pandas DataFrames) compatible with scientific Python ecosystem
+8. THE TDS_System SHALL provide documentation for the Python API including function signatures, parameter descriptions, and usage examples
 
-* Line charts for energy and symmetry ratios (Chart.js or D3.js).
-* Statistical summaries (mean, variance).
-* Export current dataset to CSV.
-* Auto-highlight of symmetry anomalies in graph view.
+### Requirement 15: DOI Assignment and Repository Integration
 
-**Success:** Metrics update in real time; CSV exports function properly.
+**User Story:** As a researcher, I want to publish simulation results with DOI identifiers to scientific repositories like Zenodo, so that my TDS experiments are citable, discoverable, and permanently archived.
 
----
+#### Acceptance Criteria
 
-### Step 8 — Tutorial & Glossary System
+1. THE TDS_System SHALL integrate with Zenodo API to allow Users to upload simulation datasets directly from the application
+2. WHEN the User publishes a dataset to Zenodo, THE TDS_System SHALL automatically generate complete metadata including title, authors, description, keywords, and TDS-specific parameters
+3. THE TDS_System SHALL request and display a DOI for each published dataset allowing permanent citation
+4. THE TDS_System SHALL support versioning of published datasets with automatic linking between versions
+5. THE TDS_System SHALL allow Users to associate ORCID identifiers with published datasets for author attribution
+6. THE TDS_System SHALL generate citation strings in multiple formats (BibTeX, RIS, APA) for published datasets
+7. WHERE the User loads a previously published dataset, THE TDS_System SHALL display its DOI and provide a link to the repository record
+8. THE TDS_System SHALL include dataset licensing options (CC0, CC-BY, etc.) during publication
+9. THE TDS_System SHALL support publishing to alternative repositories (Figshare, OSF) through configurable API endpoints
 
-**Goal:** Build learning interface.
+### Requirement 16: Informational Geometry Visualization
 
-**Create:**
+**User Story:** As a researcher, I want to visualize the informational metric g_ij^(info) and curvature arising from asymmetric energy density gradients, so that I can understand how TDS geometry emerges from symmetry dynamics.
 
-* `ui/tutorial_overlay.jsx`
-* `ui/glossary_modal.jsx`
-* `data/glossary.json`
+#### Acceptance Criteria
 
-**Implement:**
+1. THE TDS_System SHALL calculate informational metric components g_ij^(info) proportional to ∂_i ρ × ∂_j ρ where ρ represents asymmetric energy density
+2. WHERE the User enables geometry visualization mode, THE TDS_System SHALL display curvature through visual distortion or color gradients
+3. THE TDS_System SHALL show how regions with high Anomalous_State density create stronger informational curvature
+4. THE TDS_System SHALL allow Users to toggle between flat lattice view and curved informational geometry view
+5. THE TDS_System SHALL display the relationship between T_info gradients and emergent geometric curvature
+6. WHERE advanced mode is enabled, THE TDS_System SHALL calculate and display scalar curvature metrics derived from the informational metric
 
-* Interactive onboarding tutorial shown on first launch.
-* Tooltips explaining UI components.
-* Glossary with searchable definitions of TDS terms.
-* Link each concept to section anchors within help.
+### Requirement 12: Physics Problem Exploration
 
-**Success:** Tutorial launches and guides new users; glossary accessible via help button.
+**User Story:** As a physicist, I want to explore how TDS explains unsolved physics problems through informational symmetry dynamics, topological defects, and energy conservation, to evaluate its potential advantages over standard models.
 
----
+#### Acceptance Criteria
 
-### Step 9 — Persistence & State Management
-
-**Goal:** Save and restore user setups.
-
-**Create:**
-
-* `core/persistence.js`
-* `utils/storage.js`
-
-**Implement:**
-
-* Save lattice size, camera position, and parameters to LocalStorage.
-* “Restore Defaults” button resets all values.
-* JSON import/export of configurations and snapshots.
-* Shareable state encoding via URL parameters.
-
-**Success:** Reloading browser restores previous settings; sharing link restores same simulation.
-
----
-
-### Step 10 — Educational & Comparison Mode
-
-**Goal:** Expand accessibility and teaching capabilities.
-
-**Create:**
-
-* `ui/edu_mode.jsx` — guided tours, prebuilt scenarios.
-* `ui/comparison_view.jsx` — split-screen differential visualization.
-* `data/lessons.json` — educational text and quizzes.
-
-**Implement:**
-
-* Presentation fullscreen mode.
-* Guided lessons showing symmetry evolution.
-* Side-by-side comparison between two simulations.
-* Report generation with parameter summaries.
-
-**Success:** Instructor mode functional; comparison renders correctly.
-
----
-
-### Step 11 — Physics Validation Mode
-
-**Goal:** Simulate known physical problems under TDS.
-
-**Create:**
-
-* `data/physics_cases.json`
-* `core/problem_loader.js`
-* `ui/problem_panel.jsx`
-
-**Implement:**
-
-* Predefined cases (dark matter, asymmetry, information paradox, etc.).
-* Load parameters into lattice dynamically.
-* Overlay TDS vs. Standard Model predictions graphically.
-* Export reports summarizing divergences.
-
-**Success:** Physics mode runs successfully; users can compare predictions interactively.
-
----
-
-### Step 12 — Testing & Deployment
-
-**Goal:** Prepare stable release.
-
-**Actions:**
-
-1. Add Jest tests for `core` and `utils` functions.
-2. Use Lighthouse to benchmark performance.
-3. Optimize WebGL instance count and memory use.
-4. Run build via `npm run build`.
-5. Deploy to GitHub Pages using workflow `.github/workflows/deploy.yml`.
-6. Verify offline PWA behavior.
-
-**Success:** Site loads under three seconds; runs offline; interactive simulation fully operational.
-
----
-
-# End of Document
-
-```
-```
+1. THE TDS_System SHALL include a physics problems section with predefined scenarios based on TDS interpretations
+2. THE TDS_System SHALL provide scenarios demonstrating TDS explanations for dark matter as Broken_State regions, dark energy as symmetry transition energy, matter-antimatter asymmetry as spontaneous symmetry breaking, and mass as persistent Anomalous_State defects
+3. WHEN the User selects a physics problem scenario, THE TDS_System SHALL load appropriate lattice configuration, coupling strength J, and initial symmetry distribution
+4. THE TDS_System SHALL display comparisons between TDS predictions based on E_sym, E_asym, and T_info versus Standard Model predictions
+5. WHERE experimental data exists, THE TDS_System SHALL overlay quantitative metrics showing agreement or divergence with TDS model
+6. THE TDS_System SHALL provide detailed theoretical explanations for each physics problem scenario including the TDS mechanism such as topological defects for mass or asymmetric energy for dark matter
+7. THE TDS_System SHALL allow Users to define and execute custom physics problem tests by configuring initial symmetry states and evolution parameters
+8. THE TDS_System SHALL generate reports summarizing where TDS predictions match or diverge from standard predictions with quantitative metrics
+9. THE TDS_System SHALL provide references to TDS theory papers including Core Law of TDS and Symmetry Anomalies framework
+10. THE TDS_System SHALL demonstrate that photons emerge as perfectly reversible cycles where local asymmetries alternate with period 2τ giving zero net imbalance
+11. THE TDS_System SHALL allow Users to export physics problem results in HDF5 format with complete metadata for publication and reproducibility
+12. THE TDS_System SHALL generate FAIR-compliant datasets for each physics problem scenario suitable for submission to scientific repositories
