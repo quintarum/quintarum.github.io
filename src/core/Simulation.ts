@@ -2,11 +2,13 @@ import { Physics } from './Physics.js';
 import { Lattice, LatticeStatistics, LatticeData } from './Lattice.js';
 import { PhysicsParams } from './Node.js';
 import { ConservationReport } from './ConservationEnforcer.js';
+import { ReversibilityValidator, CycleTestResult } from './ReversibilityValidator.js';
 
 export interface SimulationParams extends PhysicsParams {
   maxHistoryDepth?: number;
   enforceConservation?: boolean;
   conservationTolerance?: number;
+  validateReversibility?: boolean;
 }
 
 interface SimulationState {
@@ -95,6 +97,7 @@ export class Simulation {
   private nextBookmarkId: number = 1;
   private animationFrameId: number | null = null;
   private callbacks: SimulationCallbacks;
+  private reversibilityValidator: ReversibilityValidator;
 
   constructor(lattice: Lattice, params: Partial<SimulationParams> = {}) {
     this.lattice = lattice;
@@ -115,6 +118,15 @@ export class Simulation {
       onBookmarkAdded: null,
       onHistoryChange: null
     };
+    
+    // Initialize reversibility validator
+    this.reversibilityValidator = new ReversibilityValidator(
+      params.conservationTolerance ?? 1e-6
+    );
+    
+    if (params.validateReversibility) {
+      this.reversibilityValidator.enableContinuousMode();
+    }
     
     this.saveState();
   }
@@ -488,6 +500,31 @@ export class Simulation {
         state: this.getState()
       });
     }
+  }
+
+  /**
+   * Test reversibility cycle
+   */
+  async testReversibilityCycle(steps: number = 100): Promise<CycleTestResult> {
+    return this.reversibilityValidator.testReversibilityCycle(this, steps);
+  }
+
+  /**
+   * Get reversibility validator
+   */
+  getReversibilityValidator(): ReversibilityValidator {
+    return this.reversibilityValidator;
+  }
+
+  /**
+   * Get conservation status for display
+   */
+  getConservationStatus(): {
+    status: 'good' | 'warning' | 'error';
+    message: string;
+    color: string;
+  } {
+    return this.reversibilityValidator.getConservationStatus();
   }
 
   export(): ExportData {

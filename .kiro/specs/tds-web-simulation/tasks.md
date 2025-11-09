@@ -97,11 +97,13 @@ This implementation plan breaks down the TDS Web Simulation into discrete, manag
 
 ### Task 4: Update Simulation Class for TDS Reversibility
 
-- [ ] 4.1 Enhance reversibility validation
-  - Add validation method to verify E_sym + E_asym = E_0 throughout history
-  - Implement reversibility score calculation comparing forward-backward cycles
-  - Add continuous validation mode with real-time monitoring
-  - Display conservation status in UI
+- [x] 4.1 Enhance reversibility validation (COMPLETED)
+  - Created ReversibilityValidator class with validateConservation() method
+  - Implemented reversibility score calculation (energy, state, spin consistency)
+  - Added testReversibilityCycle() for forward-backward cycle testing
+  - Implemented continuous validation mode with real-time monitoring
+  - Added getConservationStatus() for UI display (good/warning/error)
+  - Integrated into Simulation class
   - _Requirements: 7.8, 7.9, 13.1, 13.2_
 
 - [ ] 4.2 Update export/import for TDS data
