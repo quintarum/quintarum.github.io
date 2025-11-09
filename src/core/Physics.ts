@@ -53,29 +53,29 @@ export class Physics {
   }
 
   /**
-   * Calculate local symmetry based on neighbor states
+   * Calculate local symmetry based on neighbor states (vacuum ratio)
    */
   static calculateLocalSymmetry(neighbors: Node[]): number {
     if (neighbors.length === 0) return 1.0;
     
-    const symmetricCount = neighbors.filter(n => n.state === 'symmetric').length;
-    const asymmetricCount = neighbors.filter(n => n.state === 'asymmetric').length;
-    const anomalyCount = neighbors.filter(n => n.state === 'anomaly').length;
+    const vacuumCount = neighbors.filter(n => n.state === 'vacuum').length;
+    const brokenCount = neighbors.filter(n => n.state === 'broken').length;
+    const anomalousCount = neighbors.filter(n => n.state === 'anomalous').length;
     
     const symmetryScore = 
-      (symmetricCount * 1.0 + asymmetricCount * 0.5 + anomalyCount * 0.0) / neighbors.length;
+      (vacuumCount * 1.0 + brokenCount * 0.5 + anomalousCount * 0.0) / neighbors.length;
     
     return symmetryScore;
   }
 
   /**
-   * Calculate energy gradient between a node and its neighbors
+   * Calculate energy gradient between a node and its neighbors (E_asym gradient)
    */
   static calculateEnergyGradient(node: Node, neighbors: Node[]): number {
     if (neighbors.length === 0) return 0;
     
-    const avgEnergy = neighbors.reduce((sum, n) => sum + n.energy, 0) / neighbors.length;
-    const gradient = Math.abs(node.energy - avgEnergy);
+    const avgE_asym = neighbors.reduce((sum, n) => sum + n.E_asym, 0) / neighbors.length;
+    const gradient = Math.abs(node.E_asym - avgE_asym);
     
     return Math.min(1.0, gradient / 10.0);
   }

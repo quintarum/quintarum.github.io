@@ -247,6 +247,25 @@ This document defines the functional requirements for the **Web Simulation of th
 8. THE TDS_System SHALL provide unit tests for core TDS operations including symmetry transitions, anomaly formation, and informational tension calculation
 9. THE TDS_System SHALL include regression tests comparing current simulation results against validated reference datasets
 
+### Requirement 13A: Photon Window Test and Advanced Analytics
+
+**User Story:** As a researcher, I want to verify perfect reversibility through Photon Window tests and track advanced statistical metrics including energy correlation, drift, and Fourier mode amplitudes, so that I can rigorously validate TDS dynamics and analyze wave-like phenomena.
+
+#### Acceptance Criteria
+
+1. THE TDS_System SHALL implement a Photon Window test that runs N forward steps followed by N backward steps and calculates the Hamming distance between initial and final states
+2. WHEN the Photon Window test completes, THE TDS_System SHALL display the reversibility ratio (Hamming distance / total nodes) with color coding: green if ratio < 0.001, red otherwise
+3. THE TDS_System SHALL calculate real-time correlation ρ(E_sym, E_asym) using Welford's online algorithm for numerical stability
+4. THE TDS_System SHALL track energy drift metrics including mean |E₀ - E₀_ref| and maximum |E₀ - E₀_ref| over the simulation run
+5. THE TDS_System SHALL calculate Fourier mode amplitude A_kx = |Σ s_i × cos(2π k_x x_i / N)| for user-selectable wave number k_x
+6. THE TDS_System SHALL display RMS amplitude of A_kx(t) over time to characterize wave dynamics
+7. THE TDS_System SHALL provide a statistics panel showing ρ(E_sym, E_asym), drift (mean/max), and RMS A_kx with export to CSV
+8. THE TDS_System SHALL maintain a scrollable simulation log with format "t=X | E0=Y | E_sym=Z | E_asym=W | A_kx=V" limited to 1500 entries
+9. THE TDS_System SHALL allow Users to export the simulation log as plain text file
+10. THE TDS_System SHALL implement color spectrum visualization mode where node colors map to wave phase: hue = (270 + 360 × (x × k_x mod N) / N) mod 360
+11. THE TDS_System SHALL precompute color lookup tables (LUTs) for performance optimization in spectrum mode
+12. THE TDS_System SHALL implement swap-based dynamics using 6-phase Margolus neighborhood algorithm (x-even, y-odd, z-even, x-odd, y-even, z-odd) for deterministic reversibility
+
 ### Requirement 14: Python and Jupyter Integration
 
 **User Story:** As a computational researcher, I want to programmatically control the TDS simulation and analyze results in Jupyter notebooks, so that I can integrate TDS exploration into my existing scientific workflow.

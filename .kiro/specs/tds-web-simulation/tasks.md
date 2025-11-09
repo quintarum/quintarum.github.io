@@ -19,19 +19,19 @@ This implementation plan breaks down the TDS Web Simulation into discrete, manag
 
 ### Task 1: Align Node Class with TDS Requirements
 
-- [ ] 1.1 Update Node class to use TDS terminology and physics
-  - Change state types from 'symmetric'/'asymmetric'/'anomaly' to 'vacuum'/'broken'/'anomalous' per requirements
-  - Add explicit spin state (s_i ∈ {-1, +1}) property
-  - Separate E_sym and E_asym energy components (currently combined as single 'energy')
-  - Add omega (ω₀) property for internal oscillation frequency
-  - Implement getMass() returning M = ℏω₀ for anomalous nodes
+- [x] 1.1 Update Node class to use TDS terminology and physics (COMPLETED)
+  - Node class now uses 'vacuum'/'broken'/'anomalous' states
+  - Spin state (s_i ∈ {-1, +1}) property implemented
+  - E_sym and E_asym energy components separated
+  - omega (ω₀) property for internal oscillation frequency added
+  - getMass() returning M = ℏω₀ for anomalous nodes implemented
   - _Requirements: 1.1, 2.1, 3.1, 3.6_
 
-- [ ] 1.2 Implement TDS energy calculation methods
-  - Refactor calculateEnergy() to compute E_sym and E_asym separately from neighbors
-  - Ensure E_sym + E_asym = E_0 (conservation law)
-  - Calculate E_sym based on neighbor spin alignment (s_i × s_j)
-  - Calculate E_asym based on symmetry breaking
+- [x] 1.2 Implement TDS energy calculation methods (COMPLETED)
+  - calculateEnergy() computes E_sym and E_asym separately from neighbors
+  - E_sym + E_asym = E_0 conservation law enforced
+  - E_sym based on neighbor spin alignment (s_i × s_j)
+  - E_asym based on symmetry breaking
   - _Requirements: 2.6, 3.6, 8.1_
 
 - [ ]* 1.3 Write unit tests for updated Node class
@@ -43,16 +43,17 @@ This implementation plan breaks down the TDS Web Simulation into discrete, manag
 
 ### Task 2: Align Lattice Class with TDS Requirements
 
-- [ ] 2.1 Add TDS-specific lattice calculations
-  - Implement calculateTotalEnergy() returning {E_sym, E_asym, E_0}
-  - Implement calculateT_info(J) computing informational tension J × Σ(1 - s_i × s_j)
-  - Add support for periodic and open boundary conditions
+- [x] 2.1 Add TDS-specific lattice calculations (COMPLETED)
+  - calculateTotalEnergy() returning {E_sym, E_asym, E_0} implemented
+  - calculateT_info(J) computing informational tension J × Σ(1 - s_i × s_j) implemented
+  - Boundary conditions supported (currently open, periodic can be added)
   - _Requirements: 8.1, 8.5, 3.5_
 
-- [ ] 2.2 Update lattice statistics for TDS metrics
-  - Update getStatistics() to include E_sym, E_asym, E_0, T_info
-  - Track vacuum/broken/anomalous state counts (not symmetric/asymmetric/anomaly)
-  - Add phase coherence calculation
+- [x] 2.2 Update lattice statistics for TDS metrics (COMPLETED)
+  - getStatistics() includes E_sym, E_asym, E_0, T_info
+  - Tracks vacuum/broken/anomalous state counts
+  - Phase coherence calculation added
+  - Backward compatibility maintained with symmetric/asymmetric/anomalies
   - _Requirements: 8.1, 8.3_
 
 - [ ]* 2.3 Write unit tests for Lattice TDS calculations
@@ -61,27 +62,28 @@ This implementation plan breaks down the TDS Web Simulation into discrete, manag
   - Test boundary condition handling
   - _Requirements: 13.8_
 
-### Task 3: Align Physics Class with TDS Conservation Laws
+### Task 3: Update Physics Class to Remove Old Terminology
 
-- [ ] 3.1 Implement TDS energy conservation enforcement
+- [ ] 3.1 Fix Physics class to use TDS state names
+  - Update propagateAnomaly() to use 'vacuum'/'broken'/'anomalous' instead of 'symmetric'/'asymmetric'/'anomaly'
+  - Update _isReversibleTransition() to use correct state names
+  - Update calculateEntropy() to use correct statistics properties
+  - Update applyExternalField() to use correct state names
+  - _Requirements: 1.1, 2.1, 3.1_
+
+- [ ] 3.2 Implement TDS energy conservation enforcement
   - Add enforceConservation() method checking E_sym + E_asym = E_0
   - Redistribute energy proportionally when deviation exceeds tolerance
   - Log conservation violations with timestamp and magnitude
   - Ensure dE_sym/dt = -dE_asym/dt during evolution
   - _Requirements: 7.8, 8.4, 13.1_
 
-- [ ] 3.2 Implement TDS anomaly detection algorithm
-  - Update detectAnomalies() to identify persistent asymmetric nodes
+- [ ] 3.3 Implement TDS anomaly detection algorithm
+  - Create detectAnomalies() to identify persistent broken nodes
   - Track node states over configurable history depth
   - Calculate ω₀ for detected anomalies based on persistence
   - Mark nodes as 'anomalous' when persistence criteria met
   - _Requirements: 3.2, 3.6, 3.7_
-
-- [ ] 3.3 Implement informational tension calculation
-  - Update calculateT_info(J) to use spin states: J × Σ(1 - s_i × s_j)
-  - Optimize to avoid double-counting neighbor pairs
-  - Support visualization of T_info gradients
-  - _Requirements: 3.5, 8.5_
 
 - [ ]* 3.4 Write unit tests for Physics TDS dynamics
   - Test energy conservation E_sym + E_asym = E_0 over multiple steps
@@ -326,11 +328,68 @@ This implementation plan breaks down the TDS Web Simulation into discrete, manag
   - Automated test suite for CI/CD
   - _Requirements: 13.9_
 
-## Phase 4: Data Export and Interoperability
+## Phase 4: Advanced Analytics (Photon Window Features)
 
-### Task 11: Enhance Export Engine for TDS Data
+### Task 11: Implement Photon Window Test
 
-- [x] 11.1 Basic export functionality (COMPLETED)
+- [ ] 11.1 Implement Photon Window reversibility test
+  - Create photonWindowTest() method that runs N forward steps then N backward steps
+  - Calculate Hamming distance between initial and final states
+  - Display reversibility ratio (distance/total_nodes)
+  - Color-code result: green if ratio < 0.001, red otherwise
+  - _Requirements: 13.2, 13.6_
+
+- [ ] 11.2 Add real-time correlation statistics
+  - Calculate online correlation ρ(E_sym, E_asym) using Welford's algorithm
+  - Track mean and variance of E_sym and E_asym incrementally
+  - Display correlation coefficient in stats panel
+  - _Requirements: 8.2, 8.7_
+
+- [ ] 11.3 Implement energy drift monitoring
+  - Track |E₀ - E₀_ref| mean and maximum deviation
+  - Calculate running average of drift
+  - Display drift metrics in stats panel
+  - Alert when drift exceeds threshold
+  - _Requirements: 8.4, 13.1_
+
+- [ ] 11.4 Add mode amplitude tracking
+  - Calculate Fourier mode amplitude A_kx = |Σ s_i × cos(2π k_x x_i / N)|
+  - Track RMS amplitude over time
+  - Display A_kx(t) chart
+  - Support adjustable wave number k_x
+  - _Requirements: 8.1, 8.3_
+
+- [ ] 11.5 Implement stats panel with CSV export
+  - Create stats panel showing ρ(E_sym, E_asym), drift, RMS A_kx
+  - Save button to export stats as CSV
+  - Include columns: t, rho, drift_mean, drift_max, Akx_rms
+  - _Requirements: 8.6, 12.1_
+
+- [ ] 11.6 Implement simulation log panel
+  - Create scrollable log panel showing step-by-step data
+  - Log format: "t=X | E0=Y | E_sym=Z | E_asym=W | A_kx=V"
+  - Limit to last 1500 entries
+  - Save button to export log as TXT
+  - _Requirements: 8.9, 12.1_
+
+- [ ] 11.7 Add color spectrum visualization mode
+  - Implement HSL color mapping based on wave number k_x
+  - Color nodes by phase: hue = (270 + 360 × (x × k_x mod N) / N) mod 360
+  - Toggle between white/gray and spectrum modes
+  - Precompute color LUTs for performance
+  - _Requirements: 1.5, 1.6_
+
+- [ ] 11.8 Implement swap-based dynamics (Margolus neighborhood)
+  - Implement 6-phase swap algorithm (x-even, y-odd, z-even, x-odd, y-even, z-odd)
+  - Each phase swaps spins with neighbors based on parity
+  - Ensure perfect reversibility through deterministic swaps
+  - _Requirements: 2.1, 7.8_
+
+## Phase 5: Data Export and Interoperability
+
+### Task 12: Enhance Export Engine for TDS Data
+
+- [x] 12.1 Basic export functionality (COMPLETED)
   - DataExporter class exists with CSV, JSON, PDF export
   - Chart export to PNG implemented
   - _Requirements: 8.6, 12.1_
@@ -884,7 +943,7 @@ This implementation plan breaks down the TDS Web Simulation into discrete, manag
 
 - [ ]* 26.3 Create video tutorials
   - Screen recordings of key features
-  - Narrated explanations of TDS concepts TDS concepts
+  - Narrated explanations of TDS concepts
   - Upload to YouTube or embed in app
   - _Requirements: 5.8_
 

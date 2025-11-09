@@ -2,13 +2,24 @@ import { Node, NodeState, PhysicsParams, NodeData } from './Node.js';
 
 export interface LatticeStatistics {
   total: number;
-  symmetric: number;
-  asymmetric: number;
-  anomalies: number;
-  totalEnergy: number;
-  avgEnergy: number;
-  maxEnergy: number;
-  minEnergy: number;
+  vacuum: number;
+  broken: number;
+  anomalous: number;
+  totalE_sym: number;
+  totalE_asym: number;
+  totalE_0: number;
+  avgE_sym: number;
+  avgE_asym: number;
+  T_info: number;
+  phaseCoherence: number;
+  // Backward compatibility
+  symmetric?: number;
+  asymmetric?: number;
+  anomalies?: number;
+  totalEnergy?: number;
+  avgEnergy?: number;
+  maxEnergy?: number;
+  minEnergy?: number;
 }
 
 export interface MiniMapCell {
@@ -220,51 +231,70 @@ export class Lattice {
   }
 
   /**
-   * Get statistics about the current lattice state
-   * @returns Statistics object
+   * Get statistics about the current lattice state with TDS metrics
+   * @returns Statistics object with E_sym, E_asym, T_info
    */
   getStatistics(): LatticeStatistics {
     const stats: LatticeStatistics = {
       total: this.nodes.length,
-      symmetric: 0,
-      asymmetric: 0,
-      anomalies: 0,
-      totalEnergy: 0,
-      avgEnergy: 0,
-      maxEnergy: 0,
-      minEnergy: Infinity
+      vacuum: 0,
+      broken: 0,
+      anomalous: 0,
+      totalE_sym: 0,
+      totalE_asym: 0,
+      totalE_0: 0,
+      avgE_sym: 0,
+      avgE_asym: 0,
+      T_info: 0,
+      phaseCoherence: 0
     };
     
+    // Count states and sum energies
     for (const node of this.nodes) {
       switch (node.state) {
-        case 'symmetric':
-          stats.symmetric++;
+        case 'vacuum':
+          stats.vacuum++;
           break;
-        case 'asymmetric':
-          stats.asymmetric++;
+        case 'broken':
+          stats.broken++;
           break;
-        case 'anomaly':
-          stats.anomalies++;
+        case 'anomalous':
+          stats.anomalous++;
           break;
       }
       
-      stats.totalEnergy += node.energy;
-      stats.maxEnergy = Math.max(stats.maxEnergy, node.energy);
-      stats.minEnergy = Math.min(stats.minEnergy, node.energy);
+      stats.totalE_sym += node.E_sym;
+      stats.totalE_asym += node.E_asym;
+      stats.totalE_0 += node.getTotalEnergy();
     }
     
-    stats.avgEnergy = stats.totalEnergy / stats.total;
+    stats.avgE_sym = stats.totalE_sym / stats.total;
+    stats.avgE_asym = stats.totalE_asym / stats.total;
+    
+    // Calculate T_info (informational tension)
+    stats.T_info = this.calculateT_info(1.0);
+    
+    // Calculate phase coherence
+    stats.phaseCoherence = this.calculatePhaseCoherence();
+    
+    // Backward compatibility
+    stats.symmetric = stats.vacuum;
+    stats.asymmetric = stats.broken;
+    stats.anomalies = stats.anomalous;
+    stats.totalEnergy = stats.totalE_0;
+    stats.avgEnergy = stats.totalE_0 / stats.total;
+    stats.maxEnergy = Math.max(...this.nodes.map(n => n.getTotalEnergy()));
+    stats.minEnergy = Math.min(...this.nodes.map(n => n.getTotalEnergy()));
     
     return stats;
   }
 
   /**
-   * Reset all nodes to symmetric state
+   * Reset all nodes to vacuum state (E_asym = 0, E_sym = E_0)
    */
   reset(): void {
     for (const node of this.nodes) {
-      node.setState('symmetric');
-      node.energy = 1.0;
+      node.setState('vacuum');
       node.phase = 0;
     }
     this.miniMapDirty = true;
@@ -281,7 +311,7 @@ export class Lattice {
     const centerNode = this.getNode(x, y, z);
     if (!centerNode) return;
     
-    centerNode.setState('anomaly');
+    centerNode.setState('anomalous');
     
     if (radius > 1) {
       const region = this.getRegion(
@@ -299,7 +329,7 @@ export class Lattice {
         if (distance <= radius && distance > 0) {
           const probability = 1 - (distance / radius);
           if (Math.random() < probability) {
-            node.setState('asymmetric');
+            node.setState('broken');
           }
         }
       }
@@ -363,5 +393,119 @@ export class Lattice {
    */
   forEachNode(callback: (node: Node, index: number) => void): void {
     this.nodes.forEach(callback);
+  }
+  
+  /**
+   * Calculate total energy components {E_sym, E_asym, E_0}
+   * @returns Object with energy components
+   */
+  calculateTotalEnergy(): { E_sym: number; E_asym: number; E_0: number } {
+    let E_sym = 0;
+    let E_asym = 0;
+    
+    for (const node of this.nodes) {
+      E_sym += node.E_sym;
+      E_asym += node.E_asym;
+    }
+    
+    return {
+      E_sym,
+      E_asym,
+      E_0: E_sym + E_asym
+    };
+  }
+  
+  /**
+   * Calculate informational tension T_info = J × Σ(1 - s_i × s_j)
+   * Measures the "cost" of spin misalignment across the lattice
+   * @param J - Coupling strength
+   * @returns Informational tension value
+   */
+  calculateT_info(J: number = 1.0): number {
+    let tension = 0;
+    const counted = new Set<string>();
+    
+    for (const node of this.nodes) {
+      const neighbors = this.getNeighbors(node, 1);
+      
+      for (const neighbor of neighbors) {
+        // Create unique pair identifier to avoid double-counting
+        const pairKey = [
+          Math.min(node.position.x, neighbor.position.x),
+          Math.min(node.position.y, neighbor.position.y),
+          Math.min(node.position.z, neighbor.position.z),
+          Math.max(node.position.x, neighbor.position.x),
+          Math.max(node.position.y, neighbor.position.y),
+          Math.max(node.position.z, neighbor.position.z)
+        ].join(',');
+        
+        if (!counted.has(pairKey)) {
+          counted.add(pairKey);
+          // T_info contribution: J × (1 - s_i × s_j)
+          const spinProduct = node.spin * neighbor.spin;
+          tension += J * (1 - spinProduct);
+        }
+      }
+    }
+    
+    return tension;
+  }
+  
+  /**
+   * Calculate phase coherence across the lattice
+   * @returns Coherence value (0-1, where 1 is perfect coherence)
+   */
+  calculatePhaseCoherence(): number {
+    if (this.nodes.length === 0) return 0;
+    
+    let sumCos = 0;
+    let sumSin = 0;
+    
+    for (const node of this.nodes) {
+      sumCos += Math.cos(node.phase);
+      sumSin += Math.sin(node.phase);
+    }
+    
+    const avgCos = sumCos / this.nodes.length;
+    const avgSin = sumSin / this.nodes.length;
+    
+    // Coherence is the magnitude of the average phase vector
+    return Math.sqrt(avgCos * avgCos + avgSin * avgSin);
+  }
+  
+  /**
+   * Check energy conservation: E_sym + E_asym = E_0 for all nodes
+   * @param tolerance - Allowed deviation (default 1e-6)
+   * @returns Object with conservation status and violations
+   */
+  checkConservation(tolerance: number = 1e-6): {
+    isConserved: boolean;
+    violations: number;
+    maxDeviation: number;
+    avgDeviation: number;
+  } {
+    let violations = 0;
+    let maxDeviation = 0;
+    let totalDeviation = 0;
+    
+    for (const node of this.nodes) {
+      const E_0_expected = 1.0; // Default E_0 per node
+      const E_0_actual = node.E_sym + node.E_asym;
+      const deviation = Math.abs(E_0_actual - E_0_expected);
+      
+      if (deviation > tolerance) {
+        violations++;
+      }
+      
+      maxDeviation = Math.max(maxDeviation, deviation);
+      totalDeviation += deviation;
+    }
+    
+    return {
+      isConserved: violations === 0,
+      violations,
+      maxDeviation,
+      avgDeviation: totalDeviation / this.nodes.length
+    };
   }
 }
