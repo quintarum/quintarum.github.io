@@ -33,11 +33,8 @@ npm run build            # Build for production (includes TypeScript compilation
 npm run preview          # Preview production build
 
 # Code Quality
-npm run lint             # Check for linting issues
+npm run lint             # Check for linting and TypeScript type checking issues
 npm run lint:fix         # Auto-fix linting issues
-npm run format           # Format all code
-npm run format:check     # Check formatting without changes
-npm run type-check       # Run TypeScript type checking
 ```
 
 ## TypeScript Configuration
@@ -77,4 +74,4 @@ Modern browsers with ES2020+ support, WebGL for 3D rendering.
 
 ## Deployment
 
-Static site deployment to GitHub Pages at `/quintarum.github.io/` base path.
+Static site deployment to GitHub Pages at https://quintarum.github.io/
