@@ -1,5 +1,6 @@
 import { Node, NodeState, PhysicsParams } from './Node.js';
 import { Lattice } from './Lattice.js';
+import { ConservationEnforcer, ConservationReport } from './ConservationEnforcer.js';
 
 interface ReversibilityMetrics {
   energyConservation: number;
@@ -38,6 +39,36 @@ interface ExternalField {
  * Handles symmetry transitions, energy gradients, anomaly propagation, and reversible dynamics
  */
 export class Physics {
+  private static conservationEnforcer: ConservationEnforcer | null = null;
+
+  /**
+   * Initialize conservation enforcer
+   */
+  static initializeConservationEnforcer(tolerance: number = 1e-6, E_0_ref: number = 1.0): void {
+    this.conservationEnforcer = new ConservationEnforcer({
+      tolerance,
+      E_0_ref,
+      logViolations: true,
+      autoCorrect: true
+    });
+  }
+
+  /**
+   * Get conservation enforcer (creates if not exists)
+   */
+  static getConservationEnforcer(): ConservationEnforcer {
+    if (!this.conservationEnforcer) {
+      this.initializeConservationEnforcer();
+    }
+    return this.conservationEnforcer!;
+  }
+
+  /**
+   * Enforce energy conservation on lattice
+   */
+  static enforceConservation(lattice: Lattice): ConservationReport {
+    return this.getConservationEnforcer().enforceConservation(lattice);
+  }
   /**
    * Calculate symmetry transition probability for a node
    */

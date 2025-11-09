@@ -1,9 +1,12 @@
 import { Physics } from './Physics.js';
 import { Lattice, LatticeStatistics, LatticeData } from './Lattice.js';
 import { PhysicsParams } from './Node.js';
+import { ConservationReport } from './ConservationEnforcer.js';
 
 export interface SimulationParams extends PhysicsParams {
   maxHistoryDepth?: number;
+  enforceConservation?: boolean;
+  conservationTolerance?: number;
 }
 
 interface SimulationState {
@@ -32,6 +35,7 @@ interface StepStatistics extends LatticeStatistics {
   correlationLength: number;
   symmetryRatio: number;
   anomalyDensity: number;
+  conservationReport?: ConservationReport;
 }
 
 interface StateChangeEvent {
@@ -173,6 +177,14 @@ export class Simulation {
     this.saveState();
     this.lattice.update(this.params, dt);
     
+    // Enforce conservation if enabled
+    if (this.params.enforceConservation) {
+      const report = Physics.enforceConservation(this.lattice);
+      if (!report.isConserved && report.violations.length > 0) {
+        console.warn(`Conservation violations detected: ${report.violations.length} nodes`);
+      }
+    }
+    
     this.time += dt * this.direction;
     this.stepCount++;
     
@@ -214,6 +226,12 @@ export class Simulation {
     const entropy = Physics.calculateEntropy(this.lattice);
     const correlationLength = Physics.calculateCorrelationLength(this.lattice);
     
+    // Check conservation if enabled
+    let conservationReport: ConservationReport | undefined;
+    if (this.params.enforceConservation) {
+      conservationReport = Physics.getConservationEnforcer().enforceConservation(this.lattice);
+    }
+    
     return {
       time: this.time,
       stepCount: this.stepCount,
@@ -222,7 +240,8 @@ export class Simulation {
       entropy,
       correlationLength,
       symmetryRatio: latticeStats.vacuum / latticeStats.total,
-      anomalyDensity: latticeStats.anomalous / latticeStats.total
+      anomalyDensity: latticeStats.anomalous / latticeStats.total,
+      conservationReport
     };
   }
 
