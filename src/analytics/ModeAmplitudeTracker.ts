@@ -91,6 +91,13 @@ export class ModeAmplitudeTracker {
   }
 
   /**
+   * Get current amplitude (alias for getLastAmplitude)
+   */
+  getCurrentAmplitude(): number {
+    return this.lastAmplitude;
+  }
+
+  /**
    * Get number of samples
    */
   getSampleCount(): number {

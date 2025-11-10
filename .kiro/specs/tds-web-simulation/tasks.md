@@ -426,10 +426,16 @@ This implementation plan breaks down the TDS Web Simulation into discrete, manag
   - Include complete metadata (parameters, timestamp, TDS version)
   - _Requirements: 12.2, 12.4_
 
-- [ ] 11.4 Implement time series export
-  - Export E_sym, E_asym, T_info, anomaly counts over time to CSV
-  - Add Parquet format support for efficient storage
-  - Include conservation violation events
+- [x] 11.4 Implement time series export (COMPLETED)
+  - Export E_sym, E_asym, E_0, T_info over time to CSV
+  - Export to JSON with full metadata
+  - Include vacuum/broken/anomalous counts
+  - Include conservation deviation tracking
+  - Metadata: export date, version, lattice size, parameters
+  - Summary statistics (mean, min, max, std)
+  - Auto-record every 10 steps (up to 10,000 points)
+  - Download buttons in UI
+  - Data point counter
   - _Requirements: 8.6, 12.7_
 
 - [ ]* 11.5 Implement NumPy and MATLAB export

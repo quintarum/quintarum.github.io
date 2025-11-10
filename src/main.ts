@@ -14,6 +14,7 @@ import { AuthorPhysics } from './core/AuthorPhysics.js';
 import { TDSCharts } from './ui/TDSCharts.js';
 import { ParameterControls } from './ui/ParameterControls.js';
 import { TheoryPanel } from './ui/TheoryPanel.js';
+import { TDSDataExporter } from './utils/TDSDataExporter.js';
 
 interface AppInstance {
   simulation: Simulation | null;
@@ -28,6 +29,7 @@ interface AppInstance {
   useAuthorMode: boolean;
   tdsCharts: TDSCharts | null;
   paramControls: ParameterControls | null;
+  dataExporter: TDSDataExporter | null;
 }
 
 declare global {
@@ -49,7 +51,8 @@ window.app = {
   authorPhysics: null,
   useAuthorMode: false,
   tdsCharts: null,
-  paramControls: null
+  paramControls: null,
+  dataExporter: null
 };
 
 // Initialize application
@@ -92,10 +95,13 @@ function initApp(): void {
   window.app.renderer = renderer;
 
   // Create advanced analytics
+  // E_0_ref = 3 * N^3 (total number of bonds in 3D lattice)
+  const N = lattice.width;
+  const E_0_ref = 3 * N * N * N;
   const analytics = new AdvancedAnalytics({
     kx: 6,
-    latticeSize: lattice.width,
-    E_0_ref: 1.0,
+    latticeSize: N,
+    E_0_ref: E_0_ref,
     maxLogEntries: 1500
   });
   window.app.analytics = analytics;
@@ -121,6 +127,10 @@ function initApp(): void {
     timeStep: 1.0
   });
   window.app.paramControls = paramControls;
+
+  // Create Data Exporter
+  const dataExporter = new TDSDataExporter();
+  window.app.dataExporter = dataExporter;
 
   // Create UI
   const app = document.getElementById('app');
@@ -225,13 +235,21 @@ function initApp(): void {
               </div>
               
               <div style="padding: 15px; background: #16213e; border-radius: 8px; margin-bottom: 15px;">
-                <h3 style="margin: 0 0 10px 0; color: #4CAF50; font-size: 16px;">🔬 Advanced Analytics</h3>
-                <div id="advanced-stats" style="font-size: 13px; color: #ccc; line-height: 1.8;">
-                  <div><strong>ρ(E_sym, E_asym):</strong> <span id="correlation-value">--</span></div>
-                  <div><strong>Energy Drift:</strong> <span id="drift-value">--</span></div>
-                  <div><strong>RMS A_kx:</strong> <span id="rms-akx-value">--</span></div>
-                  <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #0f3460;">
-                    <strong>Conservation:</strong> <span id="conservation-status" style="color: #4CAF50;">✓ Good</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                  <h3 style="margin: 0; color: #4CAF50; font-size: 16px;">Real-Time Stats</h3>
+                </div>
+                <div id="advanced-stats" style="font-size: 13px; color: #ccc; line-height: 2;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span>ρ(E_sym, E_asym)</span>
+                    <span id="correlation-value" style="font-family: monospace;">--</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span>ΔE₀ (mean / max)</span>
+                    <span id="drift-value" style="font-family: monospace;">--</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span>Aₖₓ RMS</span>
+                    <span id="rms-akx-value" style="font-family: monospace;">--</span>
                   </div>
                 </div>
                 <div style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
@@ -253,20 +271,41 @@ function initApp(): void {
               </div>
               
               <div style="padding: 15px; background: #16213e; border-radius: 8px;">
-                <h3 style="margin: 0 0 10px 0; color: #4CAF50; font-size: 16px;">📊 ${t('export.title')}</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                  <button id="export-csv-btn" style="padding: 10px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; transition: all 0.2s;">
-                    📄 ${t('export.csv')}
-                  </button>
-                  <button id="export-json-btn" style="padding: 10px; background: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; transition: all 0.2s;">
-                    📋 ${t('export.json')}
-                  </button>
-                  <button id="export-chart-btn" style="padding: 10px; background: #FF9800; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; transition: all 0.2s;">
-                    📈 ${t('export.chart')}
-                  </button>
-                  <button id="export-pdf-btn" style="padding: 10px; background: #F44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; transition: all 0.2s;">
-                    📑 ${t('export.pdf')}
-                  </button>
+                <h3 style="margin: 0 0 10px 0; color: #4CAF50; font-size: 16px;">📊 Data Export</h3>
+                
+                <!-- Time Series Export -->
+                <div style="margin-bottom: 12px;">
+                  <div style="font-size: 12px; color: #888; margin-bottom: 6px;">Time Series Data:</div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <button id="export-timeseries-csv-btn" style="padding: 10px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; transition: all 0.2s;">
+                      📊 CSV
+                    </button>
+                    <button id="export-timeseries-json-btn" style="padding: 10px; background: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; transition: all 0.2s;">
+                      📋 JSON
+                    </button>
+                  </div>
+                  <div id="export-data-count" style="font-size: 11px; color: #888; margin-top: 4px; text-align: center;">
+                    0 data points recorded
+                  </div>
+                </div>
+                
+                <!-- Snapshot Export -->
+                <div style="padding-top: 12px; border-top: 1px solid #0f3460;">
+                  <div style="font-size: 12px; color: #888; margin-bottom: 6px;">Current State:</div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <button id="export-csv-btn" style="padding: 10px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; transition: all 0.2s;">
+                      📄 CSV
+                    </button>
+                    <button id="export-json-btn" style="padding: 10px; background: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; transition: all 0.2s;">
+                      📋 JSON
+                    </button>
+                    <button id="export-chart-btn" style="padding: 10px; background: #FF9800; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; transition: all 0.2s;">
+                      📈 Chart
+                    </button>
+                    <button id="export-pdf-btn" style="padding: 10px; background: #F44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; transition: all 0.2s;">
+                      📑 PDF
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -380,6 +419,15 @@ function setupControls(simulation: Simulation, renderer: Renderer2D, lattice: La
       window.app.tdsCharts.clear();
     }
     
+    // Clear export data
+    if (window.app.dataExporter) {
+      window.app.dataExporter.clear();
+      const dataCountEl = document.getElementById('export-data-count');
+      if (dataCountEl) {
+        dataCountEl.textContent = '0 data points recorded';
+      }
+    }
+    
     if (playPauseBtn) {
       playPauseBtn.innerHTML = `▶ ${t('controls.start')}`;
       playPauseBtn.style.background = '#4CAF50';
@@ -427,6 +475,50 @@ function setupControls(simulation: Simulation, renderer: Renderer2D, lattice: La
         autoAnomalyInterval = null;
       }
     }
+  });
+
+  // Time series export buttons
+  const exportTimeseriesCsvBtn = document.getElementById('export-timeseries-csv-btn');
+  const exportTimeseriesJsonBtn = document.getElementById('export-timeseries-json-btn');
+
+  exportTimeseriesCsvBtn?.addEventListener('click', () => {
+    if (!window.app.dataExporter || !window.app.paramControls) return;
+    
+    const params = window.app.paramControls.getParameters();
+    const metadata = {
+      exportDate: new Date().toISOString(),
+      simulationVersion: '1.0.0',
+      latticeSize: { width: lattice.width, height: lattice.height, depth: lattice.depth },
+      parameters: params,
+      totalSteps: simulation.getState().stepCount,
+      dataPoints: window.app.dataExporter.getDataPointCount()
+    };
+    
+    window.app.dataExporter.downloadCSV(metadata);
+    exportTimeseriesCsvBtn.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+      exportTimeseriesCsvBtn.style.transform = 'scale(1)';
+    }, 100);
+  });
+
+  exportTimeseriesJsonBtn?.addEventListener('click', () => {
+    if (!window.app.dataExporter || !window.app.paramControls) return;
+    
+    const params = window.app.paramControls.getParameters();
+    const metadata = {
+      exportDate: new Date().toISOString(),
+      simulationVersion: '1.0.0',
+      latticeSize: { width: lattice.width, height: lattice.height, depth: lattice.depth },
+      parameters: params,
+      totalSteps: simulation.getState().stepCount,
+      dataPoints: window.app.dataExporter.getDataPointCount()
+    };
+    
+    window.app.dataExporter.downloadJSON(metadata);
+    exportTimeseriesJsonBtn.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+      exportTimeseriesJsonBtn.style.transform = 'scale(1)';
+    }, 100);
   });
 
   // Export buttons
@@ -731,15 +823,31 @@ function updateStats(lattice: Lattice, simulation: Simulation): void {
     }
   }
   
-  // Update TDS Charts
-  if (window.app.tdsCharts) {
+  // Update TDS Charts with normalized values
+  if (window.app.tdsCharts && window.app.analytics) {
+    const E_0_ref = window.app.analytics.getE0Ref();
     window.app.tdsCharts.update({
       time: state.time,
       E_sym: energies.E_sym,
       E_asym: energies.E_asym,
       E_0: energies.E_0,
-      T_info: tInfo
+      E_sym_norm: energies.E_sym / E_0_ref,
+      E_asym_norm: energies.E_asym / E_0_ref,
+      E_0_norm: energies.E_0 / E_0_ref,
+      A_kx: window.app.analytics.getComponents().modeAmplitude.getCurrentAmplitude()
     });
+  }
+  
+  // Record data for export (every 10 steps to avoid too much data)
+  if (window.app.dataExporter && state.stepCount % 10 === 0) {
+    window.app.dataExporter.recordDataPoint(simulation, lattice);
+    
+    // Update data count display
+    const dataCountEl = document.getElementById('export-data-count');
+    if (dataCountEl) {
+      const count = window.app.dataExporter.getDataPointCount();
+      dataCountEl.textContent = `${count} data points recorded`;
+    }
   }
 }
 

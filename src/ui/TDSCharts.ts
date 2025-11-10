@@ -13,7 +13,10 @@ export interface TDSDataPoint {
   E_sym: number;
   E_asym: number;
   E_0: number;
-  T_info: number;
+  E_sym_norm: number;
+  E_asym_norm: number;
+  E_0_norm: number;
+  A_kx: number;
 }
 
 export class TDSCharts {
@@ -23,7 +26,7 @@ export class TDSCharts {
   private readonly maxDataPoints = 100;
 
   /**
-   * Initialize energy chart (E_sym, E_asym, E_0)
+   * Initialize energy chart (normalized E_sym, E_asym, E_0)
    */
   initEnergyChart(canvasId: string): void {
     const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
@@ -35,32 +38,32 @@ export class TDSCharts {
         labels: [],
         datasets: [
           {
-            label: 'E_sym (Symmetric Energy)',
+            label: 'E₀',
+            data: [],
+            borderColor: '#888',
+            backgroundColor: 'rgba(136, 136, 136, 0.1)',
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0,
+            borderDash: [5, 5]
+          },
+          {
+            label: 'E_sym',
             data: [],
             borderColor: '#4CAF50',
             backgroundColor: 'rgba(76, 175, 80, 0.1)',
             borderWidth: 2,
             pointRadius: 0,
-            tension: 0.4
+            tension: 0
           },
           {
-            label: 'E_asym (Asymmetric Energy)',
+            label: 'E_asym',
             data: [],
             borderColor: '#FFC107',
             backgroundColor: 'rgba(255, 193, 7, 0.1)',
             borderWidth: 2,
             pointRadius: 0,
-            tension: 0.4
-          },
-          {
-            label: 'E_0 (Total Energy)',
-            data: [],
-            borderColor: '#2196F3',
-            backgroundColor: 'rgba(33, 150, 243, 0.1)',
-            borderWidth: 2,
-            pointRadius: 0,
-            tension: 0.4,
-            borderDash: [5, 5]
+            tension: 0
           }
         ]
       },
@@ -83,12 +86,12 @@ export class TDSCharts {
           },
           title: {
             display: true,
-            text: 'TDS Energy Evolution',
-            color: '#4CAF50',
+            text: 'Energy invariants (normalized)',
+            color: '#ccc',
             font: {
               family: 'sans-serif',
-              size: 14,
-              weight: 'bold'
+              size: 13,
+              weight: 'normal'
             }
           },
           tooltip: {
@@ -166,7 +169,7 @@ export class TDSCharts {
   }
 
   /**
-   * Initialize conservation chart (E_sym + E_asym vs E_0)
+   * Initialize mode amplitude chart A_kx(t)
    */
   initConservationChart(canvasId: string): void {
     const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
@@ -178,33 +181,13 @@ export class TDSCharts {
         labels: [],
         datasets: [
           {
-            label: 'E_sym + E_asym',
+            label: 'A_kx',
             data: [],
-            borderColor: '#E74C3C',
-            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+            borderColor: '#58a6ff',
+            backgroundColor: 'rgba(88, 166, 255, 0.1)',
             borderWidth: 2,
             pointRadius: 0,
-            tension: 0.4
-          },
-          {
-            label: 'E_0 (Reference)',
-            data: [],
-            borderColor: '#4CAF50',
-            backgroundColor: 'rgba(76, 175, 80, 0.1)',
-            borderWidth: 2,
-            pointRadius: 0,
-            tension: 0.4,
-            borderDash: [5, 5]
-          },
-          {
-            label: 'Deviation (×10)',
-            data: [],
-            borderColor: '#FF9800',
-            backgroundColor: 'rgba(255, 152, 0, 0.1)',
-            borderWidth: 1,
-            pointRadius: 0,
-            tension: 0.4,
-            yAxisID: 'y1'
+            tension: 0
           }
         ]
       },
@@ -227,12 +210,12 @@ export class TDSCharts {
           },
           title: {
             display: true,
-            text: 'Energy Conservation Law: E_sym + E_asym = E_0',
-            color: '#4CAF50',
+            text: 'Mode amplitude A_kx(t)',
+            color: '#ccc',
             font: {
               family: 'sans-serif',
-              size: 14,
-              weight: 'bold'
+              size: 13,
+              weight: 'normal'
             }
           },
           tooltip: {
@@ -270,10 +253,9 @@ export class TDSCharts {
           },
           y: {
             display: true,
-            position: 'left',
             title: {
               display: true,
-              text: 'Energy',
+              text: 'Amplitude',
               color: '#888',
               font: {
                 family: 'monospace',
@@ -289,29 +271,6 @@ export class TDSCharts {
             },
             grid: {
               color: 'rgba(255, 255, 255, 0.1)'
-            }
-          },
-          y1: {
-            display: true,
-            position: 'right',
-            title: {
-              display: true,
-              text: 'Deviation',
-              color: '#FF9800',
-              font: {
-                family: 'monospace',
-                size: 11
-              }
-            },
-            ticks: {
-              color: '#FF9800',
-              font: {
-                family: 'monospace',
-                size: 10
-              }
-            },
-            grid: {
-              drawOnChartArea: false
             }
           }
         }
@@ -337,41 +296,35 @@ export class TDSCharts {
   }
 
   /**
-   * Update energy chart
+   * Update energy chart (normalized)
    */
   private updateEnergyChart(): void {
     if (!this.energyChart) return;
 
     const labels = this.dataHistory.map(d => d.time.toFixed(1));
-    const eSymData = this.dataHistory.map(d => d.E_sym);
-    const eAsymData = this.dataHistory.map(d => d.E_asym);
-    const e0Data = this.dataHistory.map(d => d.E_0);
+    const e0Data = this.dataHistory.map(d => d.E_0_norm);
+    const eSymData = this.dataHistory.map(d => d.E_sym_norm);
+    const eAsymData = this.dataHistory.map(d => d.E_asym_norm);
 
     this.energyChart.data.labels = labels;
-    this.energyChart.data.datasets[0].data = eSymData;
-    this.energyChart.data.datasets[1].data = eAsymData;
-    this.energyChart.data.datasets[2].data = e0Data;
+    this.energyChart.data.datasets[0].data = e0Data;
+    this.energyChart.data.datasets[1].data = eSymData;
+    this.energyChart.data.datasets[2].data = eAsymData;
 
     this.energyChart.update('none');
   }
 
   /**
-   * Update conservation chart
+   * Update mode amplitude chart
    */
   private updateConservationChart(): void {
     if (!this.conservationChart) return;
 
     const labels = this.dataHistory.map(d => d.time.toFixed(1));
-    const sumData = this.dataHistory.map(d => d.E_sym + d.E_asym);
-    const e0Data = this.dataHistory.map(d => d.E_0);
-    const deviationData = this.dataHistory.map(d => 
-      Math.abs((d.E_sym + d.E_asym) - d.E_0) * 10
-    );
+    const akxData = this.dataHistory.map(d => d.A_kx);
 
     this.conservationChart.data.labels = labels;
-    this.conservationChart.data.datasets[0].data = sumData;
-    this.conservationChart.data.datasets[1].data = e0Data;
-    this.conservationChart.data.datasets[2].data = deviationData;
+    this.conservationChart.data.datasets[0].data = akxData;
 
     this.conservationChart.update('none');
   }

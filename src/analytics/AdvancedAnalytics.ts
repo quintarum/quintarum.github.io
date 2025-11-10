@@ -36,6 +36,7 @@ export class AdvancedAnalytics {
   private driftMonitor: DriftMonitor;
   private amplitudeTracker: ModeAmplitudeTracker;
   private logger: SimulationLogger;
+  private E_0_ref: number;
 
   constructor(config: AdvancedAnalyticsConfig = {}) {
     const {
@@ -45,6 +46,7 @@ export class AdvancedAnalytics {
       maxLogEntries = 1500
     } = config;
 
+    this.E_0_ref = E_0_ref;
     this.photonWindow = new PhotonWindowTest();
     this.statistics = new OnlineStatistics();
     this.driftMonitor = new DriftMonitor(E_0_ref);
@@ -170,6 +172,13 @@ export class AdvancedAnalytics {
   }
 
   /**
+   * Get E_0 reference value for normalization
+   */
+  getE0Ref(): number {
+    return this.E_0_ref;
+  }
+
+  /**
    * Get individual components for advanced usage
    */
   getComponents() {
@@ -177,7 +186,7 @@ export class AdvancedAnalytics {
       photonWindow: this.photonWindow,
       statistics: this.statistics,
       driftMonitor: this.driftMonitor,
-      amplitudeTracker: this.amplitudeTracker,
+      modeAmplitude: this.amplitudeTracker,
       logger: this.logger
     };
   }

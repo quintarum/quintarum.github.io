@@ -41,7 +41,7 @@ describe('AdvancedAnalytics', () => {
       expect(components.photonWindow).toBeDefined();
       expect(components.statistics).toBeDefined();
       expect(components.driftMonitor).toBeDefined();
-      expect(components.amplitudeTracker).toBeDefined();
+      expect(components.modeAmplitude).toBeDefined();
       expect(components.logger).toBeDefined();
     });
   });
