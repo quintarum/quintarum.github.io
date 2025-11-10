@@ -13,6 +13,7 @@ import { SpectrumColorizer } from './rendering/SpectrumColorizer.js';
 import { AuthorPhysics } from './core/AuthorPhysics.js';
 import { TDSCharts } from './ui/TDSCharts.js';
 import { ParameterControls } from './ui/ParameterControls.js';
+import { TheoryPanel } from './ui/TheoryPanel.js';
 
 interface AppInstance {
   simulation: Simulation | null;
@@ -271,32 +272,7 @@ function initApp(): void {
             </div>
           </div>
           
-          <div style="margin-top: 20px; padding: 20px; background: #16213e; border-radius: 8px; text-align: left;">
-            <h3 style="margin: 0 0 10px 0; color: #4CAF50; font-size: 18px;">📚 ${t('theory.title')}</h3>
-            <div style="color: #ccc; font-size: 14px; line-height: 1.6;">
-              <p style="margin: 8px 0;"><strong style="color: #4CAF50;">🟢 ${t('theory.symmetricNodes')}</strong> ${t('theory.symmetricDesc')}</p>
-              <p style="margin: 8px 0;"><strong style="color: #FFC107;">🟡 ${t('theory.asymmetricNodes')}</strong> ${t('theory.asymmetricDesc')}</p>
-              <p style="margin: 8px 0;"><strong style="color: #F44336;">🔴 ${t('theory.anomalyNodes')}</strong> ${t('theory.anomalyDesc')}</p>
-              <p style="margin: 12px 0 8px 0; color: #aaa; border-top: 1px solid #0f3460; padding-top: 12px;">
-                <strong>${t('theory.whatToObserve')}</strong>
-              </p>
-              <ul style="margin: 0; padding-left: 20px;">
-                <li>${t('theory.observe1')}</li>
-                <li>${t('theory.observe2')}</li>
-                <li>${t('theory.observe3')}</li>
-                <li>${t('theory.observe4')}</li>
-                <li>${t('theory.observe5')}</li>
-              </ul>
-              <p style="margin: 12px 0 0 0; padding-top: 12px; border-top: 1px solid #0f3460; line-height: 1.5;">
-                <strong>${t('theory.theoryTitle')}</strong> ${t('theory.theoryDesc')}
-              </p>
-              <p style="margin: 8px 0 0 0;">
-                <a href="https://doi.org/10.5281/zenodo.17465190" target="_blank" rel="noopener noreferrer" style="color: #4CAF50; text-decoration: none;">
-                  ${t('theory.readPaper')}
-                </a>
-              </p>
-            </div>
-          </div>
+          ${TheoryPanel.createHTML()}
         </div>
       </div>
     `;

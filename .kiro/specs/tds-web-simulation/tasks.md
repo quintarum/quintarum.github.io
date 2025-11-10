@@ -678,11 +678,15 @@ This implementation plan breaks down the TDS Web Simulation into discrete, manag
   - Show that photons emerge as reversible cycles
   - _Requirements: 17.10_
 
-- [ ] 18.8 Add TDS theory references to UI
+- [x] 18.8 Add TDS theory references to UI (COMPLETED)
   - Link to Core Law of TDS paper (DOI: 10.5281/zenodo.17465190)
-  - Link to Symmetry Anomalies framework
+  - Link to Symmetry Anomalies framework (GitHub)
   - Link to TDS Manifest
-  - Display in help section and info panel
+  - Core principles with formulas (E_sym + E_asym = E₀, T_info, M = ℏω₀)
+  - Key concepts (Vacuum, Broken, Anomalous, Photon modes)
+  - Emergent constants explanation (c, ℏ, G, α)
+  - Citation information
+  - Professional scientific styling
   - _Requirements: 17.9_
 
 - [ ]* 18.9 Implement custom problem definition
