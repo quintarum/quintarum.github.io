@@ -3,7 +3,7 @@
  * Theory of Dynamic Symmetry Interactive Visualization
  */
 
-import { Lattice, LatticeStatistics } from './core/Lattice.js';
+import { Lattice } from './core/Lattice.js';
 import { Simulation } from './core/Simulation.js';
 import { Renderer2D } from './rendering/Renderer2D.js';
 import { initI18n, t } from './i18n/i18n.js';
@@ -11,6 +11,7 @@ import { DataExporter } from './utils/DataExporter.js';
 import { AdvancedAnalytics } from './analytics/AdvancedAnalytics.js';
 import { SpectrumColorizer } from './rendering/SpectrumColorizer.js';
 import { AuthorPhysics } from './core/AuthorPhysics.js';
+import { TDSCharts } from './ui/TDSCharts.js';
 
 interface AppInstance {
   simulation: Simulation | null;
@@ -23,6 +24,7 @@ interface AppInstance {
   useSpectrumColors: boolean;
   authorPhysics: AuthorPhysics | null;
   useAuthorMode: boolean;
+  tdsCharts: TDSCharts | null;
 }
 
 declare global {
@@ -42,7 +44,8 @@ window.app = {
   colorizer: null,
   useSpectrumColors: false,
   authorPhysics: null,
-  useAuthorMode: false
+  useAuthorMode: false,
+  tdsCharts: null
 };
 
 // Initialize application
@@ -100,6 +103,10 @@ function initApp(): void {
   // Create author physics engine
   const authorPhysics = new AuthorPhysics(lattice.width, 6);
   window.app.authorPhysics = authorPhysics;
+
+  // Create TDS Charts
+  const tdsCharts = new TDSCharts();
+  window.app.tdsCharts = tdsCharts;
 
   // Create UI
   const app = document.getElementById('app');
@@ -165,8 +172,11 @@ function initApp(): void {
               </div>
               
               <div style="padding: 15px; background: #16213e; border-radius: 8px; margin-bottom: 15px;">
-                <h3 style="margin: 0 0 10px 0; color: #4CAF50; font-size: 16px;">${t('stats.title')}</h3>
-                <canvas id="chart-canvas" width="350" height="200" style="width: 100%; height: auto;"></canvas>
+                <canvas id="energy-chart" style="width: 100%; height: 200px;"></canvas>
+              </div>
+              
+              <div style="padding: 15px; background: #16213e; border-radius: 8px; margin-bottom: 15px;">
+                <canvas id="conservation-chart" style="width: 100%; height: 180px;"></canvas>
               </div>
               
               <div style="padding: 15px; background: #16213e; border-radius: 8px; margin-bottom: 15px;">
@@ -278,6 +288,10 @@ function initApp(): void {
     document.getElementById('canvas-container')?.appendChild(canvas);
   }
 
+  // Initialize TDS Charts
+  tdsCharts.initEnergyChart('energy-chart');
+  tdsCharts.initConservationChart('conservation-chart');
+
   // Set up controls
   setupControls(simulation, renderer, lattice);
 
@@ -340,6 +354,12 @@ function setupControls(simulation: Simulation, renderer: Renderer2D, lattice: La
     lattice.reset();
     window.app.isRunning = false;
     anomalyCount = 0;
+    
+    // Clear charts
+    if (window.app.tdsCharts) {
+      window.app.tdsCharts.clear();
+    }
+    
     if (playPauseBtn) {
       playPauseBtn.innerHTML = `▶ ${t('controls.start')}`;
       playPauseBtn.style.background = '#4CAF50';
@@ -691,90 +711,16 @@ function updateStats(lattice: Lattice, simulation: Simulation): void {
     }
   }
   
-  // Update simple chart
-  updateChart(stats);
-}
-
-const chartHistory: Array<{ symmetric: number; asymmetric: number; anomalies: number }> = [];
-
-function updateChart(stats: LatticeStatistics): void {
-  chartHistory.push({
-    symmetric: stats.vacuum,
-    asymmetric: stats.broken,
-    anomalies: stats.anomalous
-  });
-  
-  // Keep last 50 data points
-  if (chartHistory.length > 50) {
-    chartHistory.shift();
+  // Update TDS Charts
+  if (window.app.tdsCharts) {
+    window.app.tdsCharts.update({
+      time: state.time,
+      E_sym: energies.E_sym,
+      E_asym: energies.E_asym,
+      E_0: energies.E_0,
+      T_info: tInfo
+    });
   }
-  
-  const canvas = document.getElementById('chart-canvas') as HTMLCanvasElement;
-  if (!canvas) return;
-  
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  
-  // Clear canvas
-  ctx.fillStyle = '#0f3460';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
-  if (chartHistory.length < 2) return;
-  
-  const maxValue = stats.total;
-  const width = canvas.width;
-  const height = canvas.height;
-  const padding = 20;
-  const chartWidth = width - padding * 2;
-  const chartHeight = height - padding * 2;
-  
-  // Draw grid
-  ctx.strokeStyle = '#1a2942';
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) {
-    const y = padding + (chartHeight / 4) * i;
-    ctx.beginPath();
-    ctx.moveTo(padding, y);
-    ctx.lineTo(width - padding, y);
-    ctx.stroke();
-  }
-  
-  // Draw lines
-  const pointSpacing = chartWidth / (chartHistory.length - 1);
-  
-  // Symmetric (green)
-  ctx.strokeStyle = '#4CAF50';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  chartHistory.forEach((data, i) => {
-    const x = padding + i * pointSpacing;
-    const y = padding + chartHeight - (data.symmetric / maxValue) * chartHeight;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-  
-  // Asymmetric (yellow)
-  ctx.strokeStyle = '#FFC107';
-  ctx.beginPath();
-  chartHistory.forEach((data, i) => {
-    const x = padding + i * pointSpacing;
-    const y = padding + chartHeight - (data.asymmetric / maxValue) * chartHeight;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-  
-  // Anomalies (red)
-  ctx.strokeStyle = '#F44336';
-  ctx.beginPath();
-  chartHistory.forEach((data, i) => {
-    const x = padding + i * pointSpacing;
-    const y = padding + chartHeight - (data.anomalies / maxValue) * chartHeight;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
 }
 
 // Initialize on DOM ready
