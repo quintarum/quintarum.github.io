@@ -199,11 +199,12 @@ This implementation plan breaks down the TDS Web Simulation into discrete, manag
   - Update tooltips to explain TDS physics context
   - _Requirements: 4.1, 4.2, 4.6_
 
-- [ ] 7.3 Display TDS metrics in real-time
-  - Show E_sym, E_asym, E_0 values
+- [x] 7.3 Display TDS metrics in real-time (COMPLETED)
+  - Show E_sym, E_asym, E_0 values in dedicated panel
   - Display T_info (informational tension)
-  - Show vacuum/broken/anomalous counts (update from symmetric/asymmetric/anomaly)
-  - Add conservation status indicator (green/yellow/red)
+  - Show phase coherence φ
+  - Add conservation check (E_sym + E_asym = E_0) with color coding
+  - Real-time updates every frame
   - _Requirements: 4.10, 8.1_
 
 - [ ] 7.4 Implement TDS preset configurations

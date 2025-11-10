@@ -170,6 +170,34 @@ function initApp(): void {
               </div>
               
               <div style="padding: 15px; background: #16213e; border-radius: 8px; margin-bottom: 15px;">
+                <h3 style="margin: 0 0 10px 0; color: #4CAF50; font-size: 16px;">⚡ TDS Metrics</h3>
+                <div id="tds-metrics" style="font-size: 13px; color: #ccc; line-height: 1.8;">
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div><strong>E_sym:</strong></div>
+                    <div id="e-sym-value" style="text-align: right; font-family: monospace;">--</div>
+                    <div><strong>E_asym:</strong></div>
+                    <div id="e-asym-value" style="text-align: right; font-family: monospace;">--</div>
+                    <div><strong>E_0:</strong></div>
+                    <div id="e-0-value" style="text-align: right; font-family: monospace;">--</div>
+                    <div style="grid-column: 1 / -1; height: 1px; background: #0f3460; margin: 4px 0;"></div>
+                    <div><strong>T_info:</strong></div>
+                    <div id="t-info-value" style="text-align: right; font-family: monospace;">--</div>
+                    <div><strong>Phase φ:</strong></div>
+                    <div id="phase-value" style="text-align: right; font-family: monospace;">--</div>
+                  </div>
+                  <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #0f3460; font-size: 12px;">
+                    <div style="display: flex; justify-content: space-between;">
+                      <span>E_sym + E_asym:</span>
+                      <span id="conservation-check" style="font-family: monospace;">--</span>
+                    </div>
+                    <div style="margin-top: 4px; font-size: 11px; color: #888;">
+                      Should equal E_0 (conservation law)
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div style="padding: 15px; background: #16213e; border-radius: 8px; margin-bottom: 15px;">
                 <h3 style="margin: 0 0 10px 0; color: #4CAF50; font-size: 16px;">🔬 Advanced Analytics</h3>
                 <div id="advanced-stats" style="font-size: 13px; color: #ccc; line-height: 1.8;">
                   <div><strong>ρ(E_sym, E_asym):</strong> <span id="correlation-value">--</span></div>
@@ -591,6 +619,38 @@ function updateStats(lattice: Lattice, simulation: Simulation): void {
         </div>
       </div>
     `;
+  }
+  
+  // Update TDS metrics
+  const energies = lattice.calculateTotalEnergy();
+  const tInfo = lattice.calculateT_info(1.0); // J = 1.0
+  const phaseCoherence = stats.phaseCoherence || 0;
+  
+  const eSymEl = document.getElementById('e-sym-value');
+  const eAsymEl = document.getElementById('e-asym-value');
+  const e0El = document.getElementById('e-0-value');
+  const tInfoEl = document.getElementById('t-info-value');
+  const phaseEl = document.getElementById('phase-value');
+  const conservationCheckEl = document.getElementById('conservation-check');
+  
+  if (eSymEl) eSymEl.textContent = energies.E_sym.toFixed(2);
+  if (eAsymEl) eAsymEl.textContent = energies.E_asym.toFixed(2);
+  if (e0El) e0El.textContent = energies.E_0.toFixed(2);
+  if (tInfoEl) tInfoEl.textContent = tInfo.toFixed(4);
+  if (phaseEl) phaseEl.textContent = phaseCoherence.toFixed(4);
+  
+  if (conservationCheckEl) {
+    const sum = energies.E_sym + energies.E_asym;
+    const diff = Math.abs(sum - energies.E_0);
+    conservationCheckEl.textContent = sum.toFixed(2);
+    
+    if (diff < 0.01) {
+      conservationCheckEl.style.color = '#4CAF50';
+    } else if (diff < 0.1) {
+      conservationCheckEl.style.color = '#FFC107';
+    } else {
+      conservationCheckEl.style.color = '#F44336';
+    }
   }
   
   // Update advanced analytics
