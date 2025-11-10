@@ -12,6 +12,7 @@ import { AdvancedAnalytics } from './analytics/AdvancedAnalytics.js';
 import { SpectrumColorizer } from './rendering/SpectrumColorizer.js';
 import { AuthorPhysics } from './core/AuthorPhysics.js';
 import { TDSCharts } from './ui/TDSCharts.js';
+import { ParameterControls } from './ui/ParameterControls.js';
 
 interface AppInstance {
   simulation: Simulation | null;
@@ -25,6 +26,7 @@ interface AppInstance {
   authorPhysics: AuthorPhysics | null;
   useAuthorMode: boolean;
   tdsCharts: TDSCharts | null;
+  paramControls: ParameterControls | null;
 }
 
 declare global {
@@ -45,7 +47,8 @@ window.app = {
   useSpectrumColors: false,
   authorPhysics: null,
   useAuthorMode: false,
-  tdsCharts: null
+  tdsCharts: null,
+  paramControls: null
 };
 
 // Initialize application
@@ -108,6 +111,16 @@ function initApp(): void {
   const tdsCharts = new TDSCharts();
   window.app.tdsCharts = tdsCharts;
 
+  // Create Parameter Controls
+  const paramControls = new ParameterControls({
+    J: 1.0,
+    E_0: 1.0,
+    tolerance: 1e-6,
+    k_x: 6,
+    timeStep: 1.0
+  });
+  window.app.paramControls = paramControls;
+
   // Create UI
   const app = document.getElementById('app');
   if (app) {
@@ -145,7 +158,7 @@ function initApp(): void {
                 </button>
               </div>
               
-              <div style="padding: 15px; background: #16213e; border-radius: 8px;">
+              <div style="padding: 15px; background: #16213e; border-radius: 8px; margin-bottom: 15px;">
                 <h3 style="margin: 0 0 10px 0; color: #4CAF50; font-size: 16px;">${t('legend.title')}</h3>
                 <div style="display: flex; gap: 20px; justify-content: center;">
                   <div style="display: flex; align-items: center; gap: 8px;">
@@ -162,6 +175,9 @@ function initApp(): void {
                   </div>
                 </div>
               </div>
+              
+              <!-- Parameter Controls Panel -->
+              <div id="parameter-controls-container"></div>
             </div>
             
             <!-- Right column: Stats and chart -->
@@ -291,6 +307,34 @@ function initApp(): void {
   // Initialize TDS Charts
   tdsCharts.initEnergyChart('energy-chart');
   tdsCharts.initConservationChart('conservation-chart');
+
+  // Initialize Parameter Controls
+  const paramContainer = document.getElementById('parameter-controls-container');
+  if (paramContainer) {
+    paramContainer.innerHTML = paramControls.createHTML();
+    paramControls.attachListeners();
+    
+    // Handle parameter changes
+    paramControls.setOnChange((params) => {
+      // Update analytics k_x
+      if (window.app.analytics) {
+        window.app.analytics.setKx(params.k_x);
+      }
+      
+      // Update author physics k_x
+      if (window.app.authorPhysics) {
+        window.app.authorPhysics.setKx(params.k_x);
+      }
+      
+      // Update simulation time step
+      if (window.app.simulation) {
+        window.app.simulation.params.timeStep = params.timeStep;
+      }
+      
+      // eslint-disable-next-line no-console
+      console.log('TDS Parameters updated:', params);
+    });
+  }
 
   // Set up controls
   setupControls(simulation, renderer, lattice);
