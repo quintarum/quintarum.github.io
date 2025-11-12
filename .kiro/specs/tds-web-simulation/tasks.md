@@ -263,12 +263,13 @@ This implementation plan breaks down the TDS Web Simulation into discrete, manag
   - _Requirements: 8.1, 8.3_
 
 - [x] 9.3 Implement TDS real-time charts (COMPLETED)
-  - Energy chart showing E_sym, E_asym, E_0 evolution over time
-  - Conservation chart showing E_sym + E_asym vs E_0 with deviation tracking
+  - Energy invariants chart showing normalized E₀, E_sym, E_asym (matching author's design)
+  - Mode amplitude chart showing A_kx(t) evolution
   - Professional Chart.js integration with scientific styling
-  - Dual-axis chart for deviation visualization (×10 scale)
+  - Proper normalization using E_0_ref = 3×N³ (total bonds in 3D lattice)
   - Real-time updates with 100 data points history
   - Monospace fonts for scientific appearance
+  - Clean, minimal design focused on essential metrics
   - _Requirements: 8.1, 8.2_
 
 - [ ] 9.4 Add TDS statistical summaries
@@ -365,6 +366,9 @@ This implementation plan breaks down the TDS Web Simulation into discrete, manag
   - Tracks |E₀ - E₀_ref| mean and maximum deviation
   - Calculates running average of drift
   - Provides formatMetrics() for display
+  - Simplified UI to show only essential metrics (ρ, ΔE₀, Aₖₓ RMS)
+  - Removed confusing "Advanced Analytics" panel
+  - Replaced with clean "Real-Time Stats" panel matching author's design
   - _Requirements: 8.4, 13.1_
 
 - [x] 11.4 Add mode amplitude tracking (COMPLETED)

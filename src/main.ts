@@ -69,8 +69,8 @@ function initApp(): void {
   canvas.style.display = 'block';
   canvas.style.margin = '20px auto';
 
-  // Create lattice
-  const lattice = new Lattice(20, 20, 1);
+  // Create lattice (32x32x32 for proper 3D dynamics without stack overflow)
+  const lattice = new Lattice(32, 32, 32);
   window.app.lattice = lattice;
 
   // Create simulation with parameters that show anomaly propagation
@@ -88,7 +88,7 @@ function initApp(): void {
   const renderer = new Renderer2D(canvas, {
     showGrid: true,
     showConnections: true,
-    showMiniMap: true,
+    showMiniMap: false,  // Disable useless minimap
     nodeSize: 8
   });
   renderer.initialize(canvas.width, canvas.height);
@@ -110,9 +110,13 @@ function initApp(): void {
   const colorizer = SpectrumColorizer.createSimple(lattice.width);
   window.app.colorizer = colorizer;
 
-  // Create author physics engine
+  // Create author physics engine and enable by default
   const authorPhysics = new AuthorPhysics(lattice.width, 6);
   window.app.authorPhysics = authorPhysics;
+  
+  // Enable Author Mode by default and initialize lattice
+  window.app.useAuthorMode = true;
+  authorPhysics.initializeLattice(lattice);
 
   // Create TDS Charts
   const tdsCharts = new TDSCharts();
@@ -191,13 +195,8 @@ function initApp(): void {
               <div id="parameter-controls-container"></div>
             </div>
             
-            <!-- Right column: Stats and chart -->
+            <!-- Right column: Charts and metrics -->
             <div>
-              <div id="stats" style="padding: 15px; background: #16213e; border-radius: 8px; margin-bottom: 15px;">
-                <h3 style="margin: 0 0 10px 0; color: #4CAF50; font-size: 16px;">${t('stats.title')}</h3>
-                <div id="stats-content"></div>
-              </div>
-              
               <div style="padding: 15px; background: #16213e; border-radius: 8px; margin-bottom: 15px;">
                 <canvas id="energy-chart" style="width: 100%; height: 200px;"></canvas>
               </div>
@@ -206,34 +205,7 @@ function initApp(): void {
                 <canvas id="conservation-chart" style="width: 100%; height: 180px;"></canvas>
               </div>
               
-              <div style="padding: 15px; background: #16213e; border-radius: 8px; margin-bottom: 15px;">
-                <h3 style="margin: 0 0 10px 0; color: #4CAF50; font-size: 16px;">⚡ TDS Metrics</h3>
-                <div id="tds-metrics" style="font-size: 13px; color: #ccc; line-height: 1.8;">
-                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <div><strong>E_sym:</strong></div>
-                    <div id="e-sym-value" style="text-align: right; font-family: monospace;">--</div>
-                    <div><strong>E_asym:</strong></div>
-                    <div id="e-asym-value" style="text-align: right; font-family: monospace;">--</div>
-                    <div><strong>E_0:</strong></div>
-                    <div id="e-0-value" style="text-align: right; font-family: monospace;">--</div>
-                    <div style="grid-column: 1 / -1; height: 1px; background: #0f3460; margin: 4px 0;"></div>
-                    <div><strong>T_info:</strong></div>
-                    <div id="t-info-value" style="text-align: right; font-family: monospace;">--</div>
-                    <div><strong>Phase φ:</strong></div>
-                    <div id="phase-value" style="text-align: right; font-family: monospace;">--</div>
-                  </div>
-                  <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #0f3460; font-size: 12px;">
-                    <div style="display: flex; justify-content: space-between;">
-                      <span>E_sym + E_asym:</span>
-                      <span id="conservation-check" style="font-family: monospace;">--</span>
-                    </div>
-                    <div style="margin-top: 4px; font-size: 11px; color: #888;">
-                      Should equal E_0 (conservation law)
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
+
               <div style="padding: 15px; background: #16213e; border-radius: 8px; margin-bottom: 15px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                   <h3 style="margin: 0; color: #4CAF50; font-size: 16px;">Real-Time Stats</h3>
@@ -353,6 +325,15 @@ function initApp(): void {
 
   // Set up controls
   setupControls(simulation, renderer, lattice);
+  
+  // Update Author Mode button to show correct initial state
+  const toggleAuthorModeBtn = document.getElementById('toggle-author-mode-btn');
+  if (toggleAuthorModeBtn && window.app.useAuthorMode) {
+    toggleAuthorModeBtn.innerHTML = '🔬 Author Mode ON';
+    toggleAuthorModeBtn.style.background = '#2E7D32';
+    toggleAuthorModeBtn.style.color = 'white';
+    toggleAuthorModeBtn.style.borderColor = '#4CAF50';
+  }
 
   // Start animation loop
   startAnimationLoop(simulation, renderer, lattice);
@@ -704,88 +685,12 @@ function startAnimationLoop(simulation: Simulation, renderer: Renderer2D, lattic
 }
 
 function updateStats(lattice: Lattice, simulation: Simulation): void {
-  const stats = lattice.getStatistics();
   const state = simulation.getState();
-
-  const statsContent = document.getElementById('stats-content');
-  if (statsContent) {
-    const symPercent = ((stats.vacuum / stats.total) * 100).toFixed(1);
-    const asymPercent = ((stats.broken / stats.total) * 100).toFixed(1);
-    const anomPercent = ((stats.anomalous / stats.total) * 100).toFixed(1);
-    
-    statsContent.innerHTML = `
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
-        <div><strong>${t('stats.time')}:</strong> ${state.time.toFixed(1)}s</div>
-        <div><strong>${t('stats.steps')}:</strong> ${state.stepCount}</div>
-        <div style="grid-column: 1 / -1; margin-top: 10px; padding-top: 10px; border-top: 1px solid #0f3460;">
-          <div style="margin-bottom: 8px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-              <span>🟢 ${t('stats.symmetric')}</span>
-              <strong>${stats.vacuum} (${symPercent}%)</strong>
-            </div>
-            <div style="background: #0f3460; height: 8px; border-radius: 4px; overflow: hidden;">
-              <div style="background: #4CAF50; height: 100%; width: ${symPercent}%; transition: width 0.3s;"></div>
-            </div>
-          </div>
-          <div style="margin-bottom: 8px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-              <span>🟡 ${t('stats.asymmetric')}</span>
-              <strong>${stats.broken} (${asymPercent}%)</strong>
-            </div>
-            <div style="background: #0f3460; height: 8px; border-radius: 4px; overflow: hidden;">
-              <div style="background: #FFC107; height: 100%; width: ${asymPercent}%; transition: width 0.3s;"></div>
-            </div>
-          </div>
-          <div style="margin-bottom: 8px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-              <span>🔴 ${t('stats.anomalies')}</span>
-              <strong>${stats.anomalous} (${anomPercent}%)</strong>
-            </div>
-            <div style="background: #0f3460; height: 8px; border-radius: 4px; overflow: hidden;">
-              <div style="background: #F44336; height: 100%; width: ${anomPercent}%; transition: width 0.3s;"></div>
-            </div>
-          </div>
-        </div>
-        <div style="grid-column: 1 / -1; margin-top: 10px; padding-top: 10px; border-top: 1px solid #0f3460;">
-          <strong>${t('stats.avgEnergy')}:</strong> ${(stats.totalE_0 / stats.total).toFixed(2)}
-        </div>
-      </div>
-    `;
-  }
   
-  // Update TDS metrics
+  // Calculate energies for charts
   const energies = lattice.calculateTotalEnergy();
-  const tInfo = lattice.calculateT_info(1.0); // J = 1.0
-  const phaseCoherence = stats.phaseCoherence || 0;
   
-  const eSymEl = document.getElementById('e-sym-value');
-  const eAsymEl = document.getElementById('e-asym-value');
-  const e0El = document.getElementById('e-0-value');
-  const tInfoEl = document.getElementById('t-info-value');
-  const phaseEl = document.getElementById('phase-value');
-  const conservationCheckEl = document.getElementById('conservation-check');
-  
-  if (eSymEl) eSymEl.textContent = energies.E_sym.toFixed(2);
-  if (eAsymEl) eAsymEl.textContent = energies.E_asym.toFixed(2);
-  if (e0El) e0El.textContent = energies.E_0.toFixed(2);
-  if (tInfoEl) tInfoEl.textContent = tInfo.toFixed(4);
-  if (phaseEl) phaseEl.textContent = phaseCoherence.toFixed(4);
-  
-  if (conservationCheckEl) {
-    const sum = energies.E_sym + energies.E_asym;
-    const diff = Math.abs(sum - energies.E_0);
-    conservationCheckEl.textContent = sum.toFixed(2);
-    
-    if (diff < 0.01) {
-      conservationCheckEl.style.color = '#4CAF50';
-    } else if (diff < 0.1) {
-      conservationCheckEl.style.color = '#FFC107';
-    } else {
-      conservationCheckEl.style.color = '#F44336';
-    }
-  }
-  
-  // Update advanced analytics
+  // Update Real-Time Stats
   if (window.app.analytics && window.app.simulation) {
     window.app.analytics.update(window.app.simulation);
     const analyticsData = window.app.analytics.getStatsPanelData();
